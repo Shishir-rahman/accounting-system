@@ -1,65 +1,161 @@
-import Image from "next/image";
+import DashboardCards from "@/components/DashboardCards";
+import { getSummaryData, getJournalEntries } from "@/actions/journal";
+import Link from "next/link";
 
-export default function Home() {
+export default async function Home() {
+  const summaryData = await getSummaryData();
+  const entries = await getJournalEntries();
+  const recentEntries = entries.slice(0, 5); // Just 5 recent
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="dashboard-container">
+      <header className="page-header">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+          <p className="text-secondary text-sm">Welcome back! Here's your financial summary.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        
+        <div className="header-actions">
+          <Link href="/journal" className="btn btn-primary">+ New Journal Entry</Link>
         </div>
-      </main>
+      </header>
+
+      <DashboardCards data={summaryData} />
+
+      <div className="grid-2-col">
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-4">Recent Journal Entries</h2>
+          {recentEntries.length === 0 ? (
+            <div className="transaction-empty">
+              <p className="text-secondary">No entries yet. Start by adding one!</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="mini-table">
+                <tbody>
+                  {recentEntries.map(entry => {
+                    const totalDebit = entry.lines.reduce((sum, line) => sum + line.debit, 0);
+                    return (
+                      <tr key={entry.id}>
+                        <td>{new Date(entry.date).toLocaleDateString()}</td>
+                        <td>{entry.description}</td>
+                        <td className="text-right font-medium">৳{totalDebit.toLocaleString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div style={{ marginTop: '16px' }}>
+                <Link href="/journal" style={{ color: 'var(--brand-primary)', fontSize: '0.875rem', fontWeight: 600 }}>View All Entries →</Link>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-4">Financial Insights</h2>
+          <div className="insight-item">
+            <span className="insight-label">Total Income</span>
+            <span className="insight-value text-success">৳{summaryData.totalIncome.toLocaleString()}</span>
+          </div>
+          <div className="insight-item">
+            <span className="insight-label">Total Expenses</span>
+            <span className="insight-value text-danger">৳{summaryData.totalExpense.toLocaleString()}</span>
+          </div>
+          <hr style={{ margin: '12px 0', borderColor: 'var(--border-color)', borderStyle: 'solid', borderWidth: '1px 0 0 0' }} />
+          <div className="insight-item">
+            <span className="insight-label font-bold">Net Income</span>
+            <span className={`insight-value font-bold ${summaryData.netIncome >= 0 ? 'text-success' : 'text-danger'}`}>
+              ৳{summaryData.netIncome.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .dashboard-container {
+          animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 30px;
+        }
+
+        .btn {
+          padding: 10px 20px;
+          border-radius: var(--radius-sm);
+          font-weight: 600;
+          font-size: 0.875rem;
+          transition: all 0.2s ease;
+          display: inline-block;
+        }
+
+        .btn-primary {
+          background-color: var(--brand-primary);
+          color: white;
+          box-shadow: 0 4px 10px rgba(67, 24, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+          background-color: var(--brand-primary-hover);
+          transform: translateY(-1px);
+        }
+
+        .grid-2-col {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 24px;
+        }
+
+        .mb-4 {
+          margin-bottom: 16px;
+        }
+
+        .transaction-empty {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 200px;
+          background-color: var(--bg-primary);
+          border-radius: var(--radius-sm);
+          border: 1px dashed var(--border-color);
+        }
+
+        .mini-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9rem;
+        }
+        
+        .mini-table td {
+          padding: 12px 0;
+          border-bottom: 1px solid var(--bg-primary);
+        }
+        
+        .mini-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .insight-item {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 12px;
+          font-size: 0.95rem;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 1024px) {
+          .grid-2-col {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }
