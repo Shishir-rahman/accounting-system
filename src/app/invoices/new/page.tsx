@@ -1,10 +1,10 @@
-import { getContacts } from "@/actions/journal";
+import { getContactsByType } from "@/actions/contact";
 import { getCompanySettings } from "@/actions/settings";
 import InvoiceForm from "@/components/InvoiceForm";
 import Link from "next/link";
 
 export default async function NewInvoicePage() {
-  const contacts = await getContacts();
+  const contacts = await getContactsByType('CUSTOMER');
   const settings = await getCompanySettings();
 
   return (

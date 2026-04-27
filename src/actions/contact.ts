@@ -31,6 +31,9 @@ export async function createContact(data: { name: string; type: string; email?: 
     if (data.type === 'CUSTOMER') revalidatePath('/contacts/customers');
     if (data.type === 'SUPPLIER') revalidatePath('/contacts/suppliers');
     
+    revalidatePath('/invoices/new');
+    revalidatePath('/invoices');
+    
     return { success: true, contact };
   } catch (error) {
     console.error('Failed to create contact:', error);
@@ -54,6 +57,8 @@ export async function updateContact(id: string, data: { name: string; type: stri
     revalidatePath(`/contacts/${id}`);
     revalidatePath('/contacts/customers');
     revalidatePath('/contacts/suppliers');
+    revalidatePath('/invoices/new');
+    revalidatePath('/invoices');
     return { success: true, contact };
   } catch (error) {
     console.error('Failed to update contact:', error);

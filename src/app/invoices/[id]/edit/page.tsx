@@ -1,4 +1,4 @@
-import { getContacts } from "@/actions/journal";
+import { getContactsByType } from "@/actions/contact";
 import { getInvoiceById } from "@/actions/invoice";
 import { getCompanySettings } from "@/actions/settings";
 import InvoiceForm from "@/components/InvoiceForm";
@@ -18,7 +18,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
     redirect(`/invoices/${invoice.id}`);
   }
 
-  const contacts = await getContacts();
+  const contacts = await getContactsByType('CUSTOMER');
   const settings = await getCompanySettings();
 
   return (
