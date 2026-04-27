@@ -28,32 +28,40 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  // Robust Logo Embedding
+  // Handle Logo Embedding (Support Data URL, Remote URL, and Local Path)
   if (logoUrl) {
     try {
       let imageBuffer: Buffer | ArrayBuffer | null = null;
+      let imageType: 'png' | 'jpg' = 'png';
       
-      if (logoUrl.startsWith('http')) {
+      if (logoUrl.startsWith('data:')) {
+        // Handle Base64 Data URL
+        const parts = logoUrl.split(';');
+        const mime = parts[0].split(':')[1];
+        const base64Data = parts[1].split(',')[1];
+        imageBuffer = Buffer.from(base64Data, 'base64');
+        imageType = mime === 'image/png' ? 'png' : 'jpg';
+      } else if (logoUrl.startsWith('http')) {
+        // Handle Remote URL
         const response = await fetch(logoUrl);
         imageBuffer = await response.arrayBuffer();
+        imageType = logoUrl.toLowerCase().endsWith('.png') ? 'png' : 'jpg';
       } else {
+        // Handle Local Path
         const publicPath = path.join(process.cwd(), 'public');
         const fileName = logoUrl.startsWith('/') ? logoUrl : `/${logoUrl}`;
         const localPath = path.join(publicPath, fileName);
         
         if (fs.existsSync(localPath)) {
           imageBuffer = fs.readFileSync(localPath);
+          imageType = fileName.toLowerCase().endsWith('.png') ? 'png' : 'jpg';
         }
       }
 
       if (imageBuffer) {
-        let logoImage;
-        const isPng = logoUrl.toLowerCase().endsWith('.png');
-        if (isPng) {
-          logoImage = await pdfDoc.embedPng(imageBuffer);
-        } else {
-          logoImage = await pdfDoc.embedJpg(imageBuffer);
-        }
+        const logoImage = imageType === 'png' 
+          ? await pdfDoc.embedPng(imageBuffer) 
+          : await pdfDoc.embedJpg(imageBuffer);
         
         const dims = logoImage.scale(0.3);
         page.drawImage(logoImage, {
