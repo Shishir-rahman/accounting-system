@@ -28,36 +28,34 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  // Improved Logo Embedding
+  // Robust Logo Embedding
   if (logoUrl) {
     try {
-      let imageBytes: ArrayBuffer;
+      let imageBuffer: Buffer | ArrayBuffer | null = null;
       
       if (logoUrl.startsWith('http')) {
-        // External URL
         const response = await fetch(logoUrl);
-        imageBytes = await response.arrayBuffer();
+        imageBuffer = await response.arrayBuffer();
       } else {
-        // Local path (handle relative/absolute)
         const publicPath = path.join(process.cwd(), 'public');
-        const localPath = path.join(publicPath, logoUrl.startsWith('/') ? logoUrl : `/${logoUrl}`);
+        const fileName = logoUrl.startsWith('/') ? logoUrl : `/${logoUrl}`;
+        const localPath = path.join(publicPath, fileName);
+        
         if (fs.existsSync(localPath)) {
-          imageBytes = fs.readFileSync(localPath);
-        } else {
-          throw new Error(`Logo not found at: ${localPath}`);
+          imageBuffer = fs.readFileSync(localPath);
         }
       }
 
-      if (imageBytes!) {
+      if (imageBuffer) {
         let logoImage;
         const isPng = logoUrl.toLowerCase().endsWith('.png');
         if (isPng) {
-          logoImage = await pdfDoc.embedPng(imageBytes);
+          logoImage = await pdfDoc.embedPng(imageBuffer);
         } else {
-          logoImage = await pdfDoc.embedJpg(imageBytes);
+          logoImage = await pdfDoc.embedJpg(imageBuffer);
         }
         
-        const dims = logoImage.scale(0.3); // Scale down a bit more
+        const dims = logoImage.scale(0.3);
         page.drawImage(logoImage, {
           x: 50,
           y: height - dims.height - 40,
