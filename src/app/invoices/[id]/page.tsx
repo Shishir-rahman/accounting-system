@@ -49,11 +49,14 @@ const INVOICE_STYLES = `
   .meta-item { display: flex; gap: 12px; font-size: 0.95rem; }
   .meta-item .section-label { width: 100px; text-align: right; margin-top: 2px; }
 
-  .table-wrapper { margin-bottom: 40px; }
+  .table-wrapper { margin-bottom: 40px; border: 1.5px solid #a8ccec; border-radius: 6px; overflow: hidden; }
   .standard-table { width: 100%; border-collapse: collapse; }
-  .standard-table th { background-color: #d6e8f8; padding: 12px 16px; text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #1a3d6e; border-bottom: 2px solid #a8ccec; }
-  .standard-table td { padding: 16px; border-bottom: 1px solid #f8fafc; font-size: 0.95rem; }
+  .standard-table th { background-color: #d6e8f8; padding: 12px 16px; text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #1a3d6e; border-bottom: 2px solid #a8ccec; border-right: 1px solid #a8ccec; }
+  .standard-table th:last-child { border-right: none; }
+  .standard-table td { padding: 14px 16px; border-bottom: 1px solid #e8f1fa; font-size: 0.95rem; border-right: 1px solid #e8f1fa; }
+  .standard-table td:last-child { border-right: none; }
   .standard-table tr:last-child td { border-bottom: none; }
+  .standard-table tbody tr:hover { background-color: #f4f9ff; }
 
   .bottom-grid { display: grid; grid-template-columns: 1fr 300px; gap: 40px; }
   

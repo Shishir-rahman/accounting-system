@@ -116,25 +116,47 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
     page.drawText(new Date(invoice.dueDate).toLocaleDateString(), { x: width - 120, y: height - 190, size: 10, font });
   }
 
-  // Items Table — light blue header
+  // Items Table — light blue header with box border
   const tableTop = height - 255;
-  // Blue header background
-  page.drawRectangle({ x: 50, y: tableTop - 22, width: width - 100, height: 22, color: rgb(0.85, 0.92, 0.98) });
-  // Header text in dark blue
-  page.drawText('Description', { x: 60, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
-  page.drawText('Qty', { x: 350, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
-  page.drawText('Unit Price', { x: 420, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
-  page.drawText('Total', { x: 500, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
+  const tableLeft = 50;
+  const tableRight = width - 50;
+  const tableW = tableRight - tableLeft;
+  const colQty = 345;
+  const colUnitPrice = 415;
+  const colTotal = 490;
+  const headerH = 22;
 
-  let currentY = tableTop - 40;
+  // Blue header background
+  page.drawRectangle({ x: tableLeft, y: tableTop - headerH, width: tableW, height: headerH, color: rgb(0.85, 0.92, 0.98) });
+  // Header text
+  page.drawText('Description', { x: tableLeft + 8, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
+  page.drawText('Qty', { x: colQty + 5, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
+  page.drawText('Unit Price', { x: colUnitPrice + 5, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
+  page.drawText('Total', { x: colTotal + 5, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
+
+  // Draw rows
+  let currentY = tableTop - headerH - 20;
   invoice.items.forEach((item: any) => {
-    page.drawText(item.description, { x: 60, y: currentY, size: 9, font });
-    page.drawText(item.quantity.toString(), { x: 350, y: currentY, size: 9, font });
-    page.drawText(item.unitPrice.toFixed(2), { x: 420, y: currentY, size: 9, font });
-    page.drawText(item.total.toFixed(2), { x: 500, y: currentY, size: 9, font });
+    page.drawText(item.description, { x: tableLeft + 8, y: currentY, size: 9, font });
+    page.drawText(item.quantity.toString(), { x: colQty + 5, y: currentY, size: 9, font });
+    page.drawText(item.unitPrice.toFixed(2), { x: colUnitPrice + 5, y: currentY, size: 9, font });
+    page.drawText(item.total.toFixed(2), { x: colTotal + 5, y: currentY, size: 9, font });
     currentY -= 20;
-    page.drawLine({ start: { x: 50, y: currentY + 15 }, end: { x: width - 50, y: currentY + 15 }, thickness: 0.5, color: rgb(0.95, 0.95, 0.95) });
+    // Horizontal row divider
+    page.drawLine({ start: { x: tableLeft, y: currentY + 15 }, end: { x: tableRight, y: currentY + 15 }, thickness: 0.5, color: rgb(0.85, 0.91, 0.97) });
   });
+
+  // Outer border box around entire table
+  const tableBottom = currentY + 15;
+  const tableHeight = (tableTop) - tableBottom;
+  page.drawRectangle({ x: tableLeft, y: tableBottom, width: tableW, height: tableHeight, borderColor: rgb(0.67, 0.80, 0.93), borderWidth: 1.2, color: rgb(1, 1, 1, 0) });
+
+  // Vertical column dividers (full height)
+  const vLineOpts = { thickness: 0.8, color: rgb(0.67, 0.80, 0.93) };
+  page.drawLine({ start: { x: colQty, y: tableBottom }, end: { x: colQty, y: tableTop }, ...vLineOpts });
+  page.drawLine({ start: { x: colUnitPrice, y: tableBottom }, end: { x: colUnitPrice, y: tableTop }, ...vLineOpts });
+  page.drawLine({ start: { x: colTotal, y: tableBottom }, end: { x: colTotal, y: tableTop }, ...vLineOpts });
+
 
   // Totals
   currentY -= 20;
