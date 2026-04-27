@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { createJournalEntry } from './journal';
 import { getCompanySettings } from './settings';
+import { sendEmail } from '@/lib/mail';
+import { generateInvoicePDF } from '@/lib/pdf';
 
 export async function getInvoices() {
   return await prisma.invoice.findMany({
@@ -161,7 +163,33 @@ export async function sendInvoice(id: string) {
     if (!invoice) return { success: false, error: 'Invoice not found' };
     if (invoice.status !== 'DRAFT') return { success: false, error: 'Invoice is already sent or paid' };
 
-    console.log(`[MOCK EMAIL] Sending invoice ${invoice.invoiceNumber} to ${invoice.contact.name}`);
+    // Send Real Email
+    if (invoice.contact.email) {
+      const emailBody = `Dear Concern,
+
+We are contacting you regarding invoice no- ${invoice.invoiceNumber} of the invoice. Please check the attached file for the updated invoice, make a bill against this invoice by a cheque/Bkash & notify us as soon as possible.
+
+We are working regularly to upgrade our system for your efficiency, which is our vision as we prioritize our customers first. Please make sure that you don't have any pending bills with us or pay the pending ASAP if you have.
+
+From now on, Sokrio is offering your payment (Optional) through bKash ( 01798013530 ) to reduce your valuable time. Please mention your invoice number as a reference for the payment.`;
+
+      const settings = await getCompanySettings();
+      const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined);
+
+      await sendEmail({
+        to: invoice.contact.email,
+        subject: `Invoice ${invoice.invoiceNumber} from Sokrio`,
+        text: emailBody,
+        attachments: [
+          {
+            filename: `${invoice.invoiceNumber}.pdf`,
+            content: pdfBuffer,
+          },
+        ],
+      });
+    } else {
+      console.warn(`No email address found for contact ${invoice.contact.name}. Skipping email.`);
+    }
 
     // Auto-Journal Entry
     // Find or create required accounts
