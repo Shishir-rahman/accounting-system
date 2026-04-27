@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { sendInvoice } from '@/actions/invoice';
+import { useRouter } from 'next/navigation';
 
 export default function InvoiceActions({ invoiceId, status }: { invoiceId: string, status: string }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -17,6 +19,7 @@ export default function InvoiceActions({ invoiceId, status }: { invoiceId: strin
 
     if (res.success) {
       setSuccess('Invoice sent successfully! A Journal Entry has been created.');
+      router.refresh();
     } else {
       setError(res.error || 'Failed to send invoice');
     }
