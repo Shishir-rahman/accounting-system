@@ -33,7 +33,7 @@ const INVOICE_STYLES = `
   .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
   .company-info-right { text-align: right; }
   .company-name-standard { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
-  .invoice-title-standard { font-size: 2rem; font-weight: 800; letter-spacing: 2px; color: #cbd5e1; }
+  .invoice-title-standard { font-size: 1rem; font-weight: 700; letter-spacing: 3px; color: #7ba7d4; text-align: center; width: 100%; display: block; margin: 10px 0 4px 0; }
   .invoice-logo-left { max-height: 80px; max-width: 180px; object-fit: contain; }
   
   .header-divider { height: 2px; background-color: #f1f5f9; margin: 20px 0 30px 0; }
@@ -51,7 +51,7 @@ const INVOICE_STYLES = `
 
   .table-wrapper { margin-bottom: 40px; }
   .standard-table { width: 100%; border-collapse: collapse; }
-  .standard-table th { background-color: #f8fafc; padding: 12px 16px; text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+  .standard-table th { background-color: #d6e8f8; padding: 12px 16px; text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #1a3d6e; border-bottom: 2px solid #a8ccec; }
   .standard-table td { padding: 16px; border-bottom: 1px solid #f8fafc; font-size: 0.95rem; }
   .standard-table tr:last-child td { border-bottom: none; }
 
@@ -123,6 +123,9 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
           </div>
 
           <div className="header-divider" />
+          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <span className="invoice-title-standard">INVOICE</span>
+          </div>
 
           {/* Info Section */}
           <div className="info-grid">

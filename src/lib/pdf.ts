@@ -85,10 +85,20 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   page.drawText(address1, { x: width - font.widthOfTextAtSize(address1, 9) - 50, y: height - 70, size: 9, font });
   page.drawText(contactInfo, { x: width - font.widthOfTextAtSize(contactInfo, 9) - 50, y: height - 82, size: 9, font });
 
-  page.drawText('INVOICE', { x: 50, y: height - 120, size: 24, font: boldFont, color: rgb(0.8, 0.8, 0.8) });
+  // INVOICE title - smaller, centered, lower
+  const invoiceTitle = 'INVOICE';
+  const invoiceTitleSize = 16;
+  const invoiceTitleWidth = boldFont.widthOfTextAtSize(invoiceTitle, invoiceTitleSize);
+  page.drawText(invoiceTitle, { 
+    x: (width - invoiceTitleWidth) / 2, 
+    y: height - 125, 
+    size: invoiceTitleSize, 
+    font: boldFont, 
+    color: rgb(0.6, 0.7, 0.85) // light blue
+  });
 
   // Divider
-  page.drawLine({ start: { x: 50, y: height - 130 }, end: { x: width - 50, y: height - 130 }, thickness: 2, color: rgb(0.9, 0.9, 0.9) });
+  page.drawLine({ start: { x: 50, y: height - 140 }, end: { x: width - 50, y: height - 140 }, thickness: 1.5, color: rgb(0.85, 0.90, 0.97) });
 
   // Info Section
   page.drawText('BILL TO:', { x: 50, y: height - 160, size: 10, font: boldFont });
@@ -106,13 +116,15 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
     page.drawText(new Date(invoice.dueDate).toLocaleDateString(), { x: width - 120, y: height - 190, size: 10, font });
   }
 
-  // Items Table
-  const tableTop = height - 250;
-  page.drawRectangle({ x: 50, y: tableTop - 20, width: width - 100, height: 20, color: rgb(0.98, 0.98, 0.98) });
-  page.drawText('Description', { x: 60, y: tableTop - 15, size: 9, font: boldFont });
-  page.drawText('Qty', { x: 350, y: tableTop - 15, size: 9, font: boldFont });
-  page.drawText('Unit Price', { x: 420, y: tableTop - 15, size: 9, font: boldFont });
-  page.drawText('Total', { x: 500, y: tableTop - 15, size: 9, font: boldFont });
+  // Items Table — light blue header
+  const tableTop = height - 255;
+  // Blue header background
+  page.drawRectangle({ x: 50, y: tableTop - 22, width: width - 100, height: 22, color: rgb(0.85, 0.92, 0.98) });
+  // Header text in dark blue
+  page.drawText('Description', { x: 60, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
+  page.drawText('Qty', { x: 350, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
+  page.drawText('Unit Price', { x: 420, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
+  page.drawText('Total', { x: 500, y: tableTop - 15, size: 9, font: boldFont, color: rgb(0.1, 0.25, 0.55) });
 
   let currentY = tableTop - 40;
   invoice.items.forEach((item: any) => {
