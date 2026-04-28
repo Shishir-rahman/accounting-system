@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import prisma from './prisma';
 import fs from 'fs';
 import path from 'path';
 
@@ -106,16 +107,36 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
     page.drawText(new Date(invoice.dueDate).toLocaleDateString(), { x: width - 120, y: height - 190, size: 10, font });
   }
 
-  // ── Items Table with box border ───────────────────────────────────────────
-  const TL = 50;            // table left
-  const TR = width - 50;   // table right
-  const TW = TR - TL;      // table width
-  const COL_QTY      = 340;
-  const COL_UNIT     = 410;
-  const COL_TOTAL    = 482;
-  const ROW_H        = 22;
-  const HEADER_Y     = height - 255; // top of header row
+  // ── Items Table with dynamic columns ─────────────────────────────────────
+  const hasPeriod = !!invoice.billingPeriodStart;
+  const hasDesc   = invoice.items.some((i: any) => i.description);
 
+  const TL = 50;
+  const TR = width - 50;
+  const TW = TR - TL;
+
+  // Define column weights based on what's visible
+  const colConfig = [
+    { id: 'product', label: 'Product / Service', weight: hasPeriod ? (hasDesc ? 1.3 : 1.8) : (hasDesc ? 1.8 : 2.5) },
+    { id: 'period',  label: 'Billing Period',    weight: hasPeriod ? 1.2 : 0 },
+    { id: 'desc',    label: 'Description',       weight: hasDesc ? 1.2 : 0 },
+    { id: 'qty',     label: 'Qty',               weight: 0.4 },
+    { id: 'price',   label: 'Unit Price',        weight: 0.7 },
+    { id: 'total',   label: 'Total',             weight: 0.7 },
+  ].filter(c => c.weight > 0);
+
+  const totalWeight = colConfig.reduce((s, c) => s + c.weight, 0);
+
+  let tempX = TL;
+  const activeCols = colConfig.map(col => {
+    const w = (col.weight / totalWeight) * TW;
+    const x = tempX;
+    tempX += w;
+    return { ...col, x, w };
+  });
+
+  const ROW_H    = 22;
+  const HEADER_Y = height - 255;
   const blueHdr  = rgb(0.85, 0.92, 0.98);
   const blueDark = rgb(0.1, 0.25, 0.55);
   const blueBdr  = rgb(0.67, 0.80, 0.93);
@@ -125,72 +146,115 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   page.drawRectangle({ x: TL, y: HEADER_Y - ROW_H, width: TW, height: ROW_H, color: blueHdr });
 
   // Header texts
-  page.drawText('Description', { x: TL + 8, y: HEADER_Y - 14, size: 9, font: boldFont, color: blueDark });
-  page.drawText('Qty',         { x: COL_QTY + 5,  y: HEADER_Y - 14, size: 9, font: boldFont, color: blueDark });
-  page.drawText('Unit Price',  { x: COL_UNIT + 5,  y: HEADER_Y - 14, size: 9, font: boldFont, color: blueDark });
-  page.drawText('Total',       { x: COL_TOTAL + 5,  y: HEADER_Y - 14, size: 9, font: boldFont, color: blueDark });
-
-  // Draw rows
-  let currentY = HEADER_Y - ROW_H; // start just below header
-  invoice.items.forEach((item: any, i: number) => {
-    const rowY = currentY - ROW_H;
-    // Alternate row background
-    if (i % 2 === 0) {
-      page.drawRectangle({ x: TL, y: rowY, width: TW, height: ROW_H, color: blueRow });
-    }
-    page.drawText(item.description,          { x: TL + 8,        y: rowY + 7, size: 9, font });
-    page.drawText(item.quantity.toString(),  { x: COL_QTY + 5,   y: rowY + 7, size: 9, font });
-    page.drawText(item.unitPrice.toFixed(2), { x: COL_UNIT + 5,   y: rowY + 7, size: 9, font });
-    page.drawText(item.total.toFixed(2),     { x: COL_TOTAL + 5,  y: rowY + 7, size: 9, font });
-    currentY = rowY;
+  activeCols.forEach(col => {
+    page.drawText(col.label, { x: col.x + 5, y: HEADER_Y - 14, size: 8, font: boldFont, color: blueDark });
   });
 
-  const TABLE_BOTTOM = currentY;
+  // Helper for date formatting
+  const formatDate = (dateStr: any) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+  };
+  const periodText = (invoice.billingPeriodStart && invoice.billingPeriodEnd)
+    ? `${formatDate(invoice.billingPeriodStart)} to ${formatDate(invoice.billingPeriodEnd)}`
+    : '';
+
+  // Draw rows
+  let rowCursorY = HEADER_Y - ROW_H;
+  for (const [index, item] of invoice.items.entries()) {
+    const rowY = rowCursorY - ROW_H;
+    if (index % 2 === 0) {
+      page.drawRectangle({ x: TL, y: rowY, width: TW, height: ROW_H, color: blueRow });
+    }
+
+    for (const col of activeCols) {
+      let text = '';
+      if (col.id === 'product') {
+        let pName = item.product?.name;
+        // Fallback: if we have a productId but relation is missing
+        if (!pName && item.productId) {
+          try {
+            const p = await prisma.product.findUnique({ where: { id: item.productId } });
+            if (p) pName = p.name;
+          } catch (e) {}
+        }
+        text = pName || item.description || 'Custom';
+        
+        // Auto-scale font if text is too long for column width
+        const textWidth = font.widthOfTextAtSize(text, 8);
+        const availableW = col.w - 10;
+        const scaleFactor = textWidth > availableW ? availableW / textWidth : 1;
+        const fontSize = 8 * scaleFactor;
+
+        page.drawText(text, { x: col.x + 5, y: rowY + 9, size: fontSize, font });
+        if (item.vatType === 'INCLUDE') {
+          page.drawText(`(Including VAT ${item.vatRate}%)`, { x: col.x + 5, y: rowY + 2, size: 6, font, color: rgb(0.4, 0.4, 0.4) });
+        }
+      } else if (col.id === 'period') {
+        page.drawText(periodText, { x: col.x + 5, y: rowY + 7, size: 7, font });
+      } else if (col.id === 'desc') {
+        const descText = item.description || '';
+        const textWidth = font.widthOfTextAtSize(descText, 8);
+        const availableW = col.w - 10;
+        const scaleFactor = textWidth > availableW ? availableW / textWidth : 1;
+        const fontSize = 8 * scaleFactor;
+        page.drawText(descText, { x: col.x + 5, y: rowY + 7, size: fontSize, font });
+      } else if (col.id === 'qty') {
+        page.drawText(item.quantity.toString(), { x: col.x + 5, y: rowY + 7, size: 8, font });
+      } else if (col.id === 'price') {
+        page.drawText(item.unitPrice.toFixed(2), { x: col.x + 5, y: rowY + 7, size: 8, font });
+      } else if (col.id === 'total') {
+        page.drawText(item.total.toFixed(2), { x: col.x + 5, y: rowY + 7, size: 8, font });
+      }
+    }
+    rowCursorY = rowY;
+  }
+
+  const TABLE_BOTTOM = rowCursorY;
   const TABLE_TOP    = HEADER_Y;
   const TABLE_H      = TABLE_TOP - TABLE_BOTTOM;
 
-  // Outer border box
+  // Border and lines
   drawBorderedRect(page, TL, TABLE_BOTTOM, TW, TABLE_H, [0.67, 0.80, 0.93], 1.2);
-
-  // Horizontal line under header
   page.drawLine({ start: { x: TL, y: TABLE_TOP - ROW_H }, end: { x: TR, y: TABLE_TOP - ROW_H }, thickness: 1.2, color: blueBdr });
 
-  // Horizontal row dividers
+  // Row dividers
   let divY = TABLE_TOP - ROW_H;
   invoice.items.forEach(() => {
     divY -= ROW_H;
     page.drawLine({ start: { x: TL, y: divY }, end: { x: TR, y: divY }, thickness: 0.5, color: blueBdr });
   });
 
-  // Vertical column dividers
-  [COL_QTY, COL_UNIT, COL_TOTAL].forEach(cx => {
-    page.drawLine({ start: { x: cx, y: TABLE_BOTTOM }, end: { x: cx, y: TABLE_TOP }, thickness: 0.8, color: blueBdr });
+  // Vertical dividers
+  activeCols.slice(1).forEach(col => {
+    page.drawLine({ start: { x: col.x, y: TABLE_BOTTOM }, end: { x: col.x, y: TABLE_TOP }, thickness: 0.8, color: blueBdr });
   });
 
   // ── Totals ────────────────────────────────────────────────────────────────
-  currentY -= 25;
+  rowCursorY -= 25;
   const totalsX = width - 210;
   const totalsValX = width - 80;
   const drawTotalRow = (label: string, value: string, y: number, bold = false) => {
     page.drawText(label, { x: totalsX, y, size: 10, font: bold ? boldFont : font });
     page.drawText(value, { x: totalsValX - font.widthOfTextAtSize(value, 10), y, size: 10, font: bold ? boldFont : font });
   };
-  drawTotalRow('Subtotal:', invoice.subtotal.toFixed(2), currentY);
-  if (invoice.discountAmount > 0) { currentY -= 16; drawTotalRow('Discount:', `-${invoice.discountAmount.toFixed(2)}`, currentY); }
-  currentY -= 16;
-  drawTotalRow(`Tax (${invoice.taxRate}%):`, invoice.taxAmount.toFixed(2), currentY);
-  currentY -= 22;
-  page.drawRectangle({ x: totalsX - 5, y: currentY - 4, width: 170, height: 22, color: rgb(0.85, 0.92, 0.98) });
-  drawTotalRow('Total Due:', invoice.totalAmount.toFixed(2), currentY, true);
+  drawTotalRow('Subtotal:', invoice.subtotal.toFixed(2), rowCursorY);
+  if (invoice.discountAmount > 0) { rowCursorY -= 16; drawTotalRow('Discount:', `-${invoice.discountAmount.toFixed(2)}`, rowCursorY); }
+  rowCursorY -= 16;
+  drawTotalRow(`Tax (${invoice.taxRate}%):`, invoice.taxAmount.toFixed(2), rowCursorY);
+  rowCursorY -= 22;
+  page.drawRectangle({ x: totalsX - 5, y: rowCursorY - 4, width: 170, height: 22, color: rgb(0.85, 0.92, 0.98) });
+  drawTotalRow('Total Due:', invoice.totalAmount.toFixed(2), rowCursorY, true);
 
   // ── In Words ──────────────────────────────────────────────────────────────
-  currentY -= 40;
-  page.drawText('In Words: ' + numberToWords(invoice.totalAmount), { x: 50, y: currentY, size: 9, font: boldFont });
+  rowCursorY -= 40;
+  page.drawText('In Words: ' + numberToWords(invoice.totalAmount), { x: 50, y: rowCursorY, size: 9, font: boldFont });
 
   // ── Payment Info ──────────────────────────────────────────────────────────
-  currentY -= 50;
-  page.drawText('Payment Info:', { x: 50, y: currentY, size: 10, font: boldFont });
-  page.drawLine({ start: { x: 50, y: currentY - 3 }, end: { x: width - 50, y: currentY - 3 }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+  rowCursorY -= 50;
+  page.drawText('Payment Info:', { x: 50, y: rowCursorY, size: 10, font: boldFont });
+  page.drawLine({ start: { x: 50, y: rowCursorY - 3 }, end: { x: width - 50, y: rowCursorY - 3 }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
   const pLines = [
     'Bank Details:',
     'Account Name: Sokrio Technologies Ltd.',
@@ -202,16 +266,16 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
     'bKash Merchant Number: 01798 013530',
   ];
   pLines.forEach(line => {
-    currentY -= 13;
-    page.drawText(line, { x: 50, y: currentY, size: 9, font: line === 'Bank Details:' ? boldFont : font });
+    rowCursorY -= 13;
+    page.drawText(line, { x: 50, y: rowCursorY, size: 9, font: line === 'Bank Details:' ? boldFont : font });
   });
 
   // ── Terms ─────────────────────────────────────────────────────────────────
-  currentY -= 35;
-  page.drawText('Terms & Conditions:', { x: 50, y: currentY, size: 10, font: boldFont });
-  page.drawLine({ start: { x: 50, y: currentY - 3 }, end: { x: width - 50, y: currentY - 3 }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
-  currentY -= 16;
-  page.drawText('Payment Method: Bank & bKash', { x: 50, y: currentY, size: 9, font });
+  rowCursorY -= 35;
+  page.drawText('Terms & Conditions:', { x: 50, y: rowCursorY, size: 10, font: boldFont });
+  page.drawLine({ start: { x: 50, y: rowCursorY - 3 }, end: { x: width - 50, y: rowCursorY - 3 }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+  rowCursorY -= 16;
+  page.drawText('Payment Method: Bank & bKash', { x: 50, y: rowCursorY, size: 9, font });
 
   const pdfBytes = await pdfDoc.save();
   return Buffer.from(pdfBytes);

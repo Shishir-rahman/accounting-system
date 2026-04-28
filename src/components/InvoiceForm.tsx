@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { createInvoice, updateInvoice } from '@/actions/invoice';
 import { getProducts } from '@/actions/catalog';
+import { getContactRates } from '@/actions/contact';
 import { useRouter } from 'next/navigation';
 
 export default function InvoiceForm({ contacts, settings, initialData }: { contacts: any[], settings?: any, initialData?: any }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [selectedContactRates, setSelectedContactRates] = useState<any[]>([]);
   const [error, setError] = useState('');
   const [products, setProducts] = useState<any[]>([]);
 
@@ -27,35 +29,82 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
 
   const initItems = initialData?.items?.length > 0 
     ? initialData.items.map((i: any) => ({ ...i, id: i.id || Date.now() + Math.random() }))
-    : [{ id: 1, productId: '', description: '', quantity: 1, unitPrice: 0 }];
+    : [{ id: 1, productId: '', description: '', quantity: 1, unitPrice: 0, vatType: 'EXCLUDE', vatRate: 0 }];
 
   const [items, setItems] = useState(initItems);
+
+  // Billing Period Logic
+  const getMonthRange = (yearMonth: string) => {
+    const [year, month] = yearMonth.split('-').map(Number);
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
+    
+    const format = (date: Date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+
+    return { 
+      start: format(start), 
+      end: format(end) 
+    };
+  };
+
+  const lastMonth = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const defaultMonth = lastMonth.toISOString().slice(0, 7);
+  const initBillingMonth = initialData?.billingPeriodStart 
+    ? new Date(initialData.billingPeriodStart).toISOString().slice(0, 7) 
+    : defaultMonth;
+  
+  const [billingMonth, setBillingMonth] = useState(initBillingMonth);
 
   useEffect(() => {
     getProducts().then(setProducts);
   }, []);
 
   useEffect(() => {
-    // Auto-populate default product when contact changes (only for new invoices with empty first row)
-    if (contactId && !initialData && products.length > 0) {
-      const selectedContact = contacts.find(c => c.id === contactId);
-      if (selectedContact && selectedContact.defaultProductId) {
-        const product = products.find(p => p.id === selectedContact.defaultProductId);
-        if (product) {
-          // Check if items are untouched
-          if (items.length === 1 && !items[0].productId && !items[0].description) {
-            setItems([{
-              id: items[0].id,
-              productId: product.id,
-              description: product.name,
-              quantity: 1,
-              unitPrice: product.price
-            }]);
+    if (contactId) {
+      getContactRates(contactId).then(rates => {
+        setSelectedContactRates(rates);
+        
+        // Auto-populate default product when contact changes
+        // Condition: If it's a new invoice AND (it's the first load OR the user hasn't added more items)
+        if (!initialData && products.length > 0 && items.length <= 1) {
+          const selectedContact = contacts.find(c => c.id === contactId);
+          const defaultProdId = selectedContact?.defaultProductId;
+          
+          if (defaultProdId) {
+            const product = products.find(p => p.id === defaultProdId);
+            if (product) {
+              const customData = rates.find((r: any) => r.productId === defaultProdId);
+              const priceToUse = customData ? customData.rate : product.price;
+              const descriptionToUse = customData?.lastDescription || product.name;
+              
+              setItems([{
+                id: items[0]?.id || Date.now(),
+                productId: product.id,
+                description: descriptionToUse,
+                quantity: 1,
+                unitPrice: priceToUse,
+                vatType: customData?.vatType || 'EXCLUDE',
+                vatRate: customData?.vatRate || 0
+              }]);
+              if (customData?.vatType === 'EXCLUDE') {
+                setTaxRate(customData.vatRate || 0);
+              } else if (customData?.vatType === 'INCLUDE') {
+                setTaxRate(0);
+              }
+            }
           }
         }
-      }
+      });
+    } else {
+      setSelectedContactRates([]);
     }
-  }, [contactId, products]);
+  }, [contactId, products, contacts, initialData]);
 
   const addItem = () => {
     setItems([...items, { id: Date.now(), productId: '', description: '', quantity: 1, unitPrice: 0 }]);
@@ -73,14 +122,31 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
         if (field === 'productId') {
           const selectedProduct = products.find(p => p.id === value);
           if (selectedProduct) {
+            // Check for custom rate/description for this customer from our fresh rates
+            const customData = selectedContactRates.find((r: any) => r.productId === value);
+            const priceToUse = customData ? customData.rate : selectedProduct.price;
+            const descriptionToUse = customData?.lastDescription || selectedProduct.name;
+
             return { 
               ...item, 
               productId: value as string, 
-              description: selectedProduct.name, 
-              unitPrice: selectedProduct.price 
+              description: descriptionToUse, 
+              unitPrice: priceToUse,
+              vatType: customData?.vatType || 'EXCLUDE',
+              vatRate: customData?.vatRate || 0
             };
           }
           return { ...item, productId: value as string };
+        }
+        if (field === 'vatType') {
+          if (value === 'EXCLUDE') {
+            setTaxRate(item.vatRate || 0);
+          } else {
+            setTaxRate(0);
+          }
+        }
+        if (field === 'vatRate' && item.vatType === 'EXCLUDE') {
+          setTaxRate(Number(value) || 0);
         }
         return { ...item, [field]: value };
       }
@@ -90,7 +156,19 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
 
   const subtotal = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);
   const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
-  const taxAmount = totalAfterDiscount * (taxRate / 100);
+  
+  // Calculate tax: ONLY sum up EXCLUDE VAT items.
+  const individualTax = items.reduce((sum: number, item: any) => {
+    if (item.vatType === 'EXCLUDE' && item.vatRate > 0) {
+      return sum + (item.quantity * item.unitPrice * (item.vatRate / 100));
+    }
+    return sum;
+  }, 0);
+
+  // If there are any EXCLUDE items, use their sum. 
+  // Otherwise, use the global taxRate ONLY if no items are explicitly set to INCLUDE.
+  const hasIncludeVat = items.some((i: any) => i.vatType === 'INCLUDE');
+  const taxAmount = individualTax > 0 ? individualTax : (hasIncludeVat ? 0 : (totalAfterDiscount * (taxRate / 100)));
   const total = totalAfterDiscount + taxAmount;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,7 +176,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
     setLoading(true);
     setError('');
 
-    const validItems = items.filter((item: any) => item.description.trim() !== '' && item.quantity > 0 && item.unitPrice > 0);
+    const validItems = items.filter((item: any) => (item.productId || item.description.trim() !== '') && item.quantity > 0 && item.unitPrice > 0);
     
     if (validItems.length === 0) {
       setError('Please add at least one valid item to the invoice.');
@@ -112,19 +190,25 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
       return;
     }
 
+    const { start: billingPeriodStart, end: billingPeriodEnd } = getMonthRange(billingMonth);
+
     const payload = {
       contactId,
       date,
       dueDate,
+      billingPeriodStart,
+      billingPeriodEnd,
       notes,
       discountAmount,
       taxRate,
       taxAmount,
       items: validItems.map((item: any) => ({
-        productId: item.productId || undefined,
+        productId: item.productId || null,
         description: item.description,
         quantity: item.quantity,
-        unitPrice: item.unitPrice
+        unitPrice: item.unitPrice,
+        vatType: item.vatType || 'EXCLUDE',
+        vatRate: item.vatRate || 0
       }))
     };
 
@@ -147,7 +231,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
       {error && <div className="alert alert-danger">{error}</div>}
 
       <form onSubmit={handleSubmit}>
-        <div className="grid-3-col mb-8">
+        <div className="grid-4-col mb-8">
           <div className="form-group">
             <label>Customer</label>
             <select value={contactId} onChange={e => setContactId(e.target.value)} required className="form-control">
@@ -165,6 +249,13 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
             <label>Due Date</label>
             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} required className="form-control" />
           </div>
+          <div className="form-group">
+            <label>Billing Month</label>
+            <input type="month" value={billingMonth} onChange={e => setBillingMonth(e.target.value)} required className="form-control" />
+            <p className="text-xs text-secondary mt-1">
+              Period: {getMonthRange(billingMonth).start} to {getMonthRange(billingMonth).end}
+            </p>
+          </div>
         </div>
 
         <h3 className="text-lg font-semibold mb-4">Invoice Items</h3>
@@ -172,68 +263,85 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
           <table className="items-table">
             <thead>
               <tr>
-                <th style={{ width: '35%' }}>Product / Service</th>
-                <th style={{ width: '30%' }}>Description</th>
-                <th style={{ width: '10%' }} className="text-right">Quantity</th>
-                <th style={{ width: '15%' }} className="text-right">Unit Price (৳)</th>
+                <th style={{ width: '20%' }}>Product / Service</th>
+                <th style={{ width: '20%' }}>Billing Period</th>
+                <th style={{ width: '25%' }}>Description</th>
+                <th style={{ width: '10%' }} className="text-right">Qty</th>
+                <th style={{ width: '12%' }} className="text-right">Unit Price (৳)</th>
                 <th style={{ width: '10%' }} className="text-right">Total (৳)</th>
-                <th style={{ width: '5%' }}></th>
+                <th style={{ width: '50px' }}></th>
               </tr>
             </thead>
             <tbody>
-              {items.map((item: any) => (
-                <tr key={item.id}>
-                  <td>
-                    <select 
-                      value={item.productId} 
-                      onChange={e => updateItem(item.id, 'productId', e.target.value)}
-                      className="table-input"
-                    >
-                      <option value="">Custom Item...</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <input 
-                      type="text" 
-                      placeholder="Item description" 
-                      value={item.description} 
-                      onChange={e => updateItem(item.id, 'description', e.target.value)}
-                      className="table-input"
-                      required
-                    />
-                  </td>
-                  <td>
-                    <input 
-                      type="number" 
-                      min="1" 
-                      value={item.quantity} 
-                      onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="table-input text-right"
-                      required
-                    />
-                  </td>
-                  <td>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      step="0.01" 
-                      value={item.unitPrice} 
-                      onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                      className="table-input text-right"
-                      required
-                    />
-                  </td>
-                  <td className="text-right font-medium" style={{ paddingRight: '16px' }}>
-                    {(item.quantity * item.unitPrice).toFixed(2)}
-                  </td>
-                  <td className="text-center">
-                    <button type="button" onClick={() => removeItem(item.id)} className="btn-icon text-danger" disabled={items.length <= 1}>✖</button>
-                  </td>
-                </tr>
-              ))}
+              {items.map((item: any) => {
+                const { start, end } = getMonthRange(billingMonth);
+                const formatDate = (dateStr: string) => {
+                  const d = new Date(dateStr);
+                  return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+                };
+                const periodDisplay = `${formatDate(start)} to ${formatDate(end)}`;
+
+                return (
+                  <tr key={item.id}>
+                    <td>
+                      <select 
+                        value={item.productId} 
+                        onChange={e => updateItem(item.id, 'productId', e.target.value)}
+                        className="table-input"
+                      >
+                        <option value="">Custom Item...</option>
+                        {products.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                      {item.vatType === 'INCLUDE' && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', marginTop: '4px' }}>
+                          (Including VAT {item.vatRate}%)
+                        </div>
+                      )}
+                    </td>
+                    <td className="text-xs text-secondary" style={{ verticalAlign: 'middle', padding: '12px 16px' }}>
+                      {periodDisplay}
+                    </td>
+                    <td>
+                      <input 
+                        type="text" 
+                        placeholder="Item description" 
+                        value={item.description} 
+                        onChange={e => updateItem(item.id, 'description', e.target.value)}
+                        className="table-input"
+                      />
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={item.quantity} 
+                        onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                        className="table-input text-right"
+                        required
+                      />
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        step="0.01" 
+                        value={item.unitPrice} 
+                        onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                        className="table-input text-right"
+                        required
+                      />
+                    </td>
+                    <td className="text-right font-medium" style={{ paddingRight: '16px' }}>
+                      {(item.quantity * item.unitPrice).toFixed(2)}
+                    </td>
+                    <td className="text-center">
+                      <button type="button" onClick={() => removeItem(item.id)} className="btn-icon text-danger" disabled={items.length <= 1}>✖</button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -313,7 +421,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
         .mb-6 { margin-bottom: 24px; }
         .mb-8 { margin-bottom: 32px; }
         .mt-8 { margin-top: 32px; }
-        .grid-3-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+        .grid-4-col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
         .form-group { display: flex; flex-direction: column; gap: 8px; }
         label { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
         .form-control { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.95rem; }
@@ -350,7 +458,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
         .alert-danger { background-color: var(--danger-bg); color: var(--danger); border: 1px solid rgba(238, 93, 80, 0.2); }
 
         @media (max-width: 768px) {
-          .grid-3-col { grid-template-columns: 1fr; }
+          .grid-4-col { grid-template-columns: 1fr; }
           .footer-grid { grid-template-columns: 1fr; gap: 24px; }
         }
       `}</style>

@@ -163,21 +163,43 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
             <table className="standard-table">
               <thead>
                 <tr>
-                  <th>Description</th>
-                  <th className="text-right">Qty</th>
-                  <th className="text-right">Unit Price</th>
-                  <th className="text-right">Total</th>
+                  <th style={{ width: '20%' }}>Product / Service</th>
+                  {invoice.billingPeriodStart && <th style={{ width: '25%' }}>Billing Period</th>}
+                  {invoice.items.some((i: any) => i.description) && <th style={{ width: '25%' }}>Description</th>}
+                  <th className="text-right" style={{ width: '10%' }}>Qty</th>
+                  <th className="text-right" style={{ width: '10%' }}>Unit Price</th>
+                  <th className="text-right" style={{ width: '10%' }}>Total</th>
                 </tr>
               </thead>
               <tbody>
-                {invoice.items.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.description}</td>
-                    <td className="text-right">{item.quantity}</td>
-                    <td className="text-right">{formatCurrency(item.unitPrice)}</td>
-                    <td className="text-right font-medium">{formatCurrency(item.total)}</td>
-                  </tr>
-                ))}
+                {invoice.items.map((item: any, index: number) => {
+                  const formatDate = (dateStr: any) => {
+                    if (!dateStr) return '';
+                    const d = new Date(dateStr);
+                    return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+                  };
+                  const period = (invoice.billingPeriodStart && invoice.billingPeriodEnd)
+                    ? `${formatDate(invoice.billingPeriodStart)} to ${formatDate(invoice.billingPeriodEnd)}`
+                    : '';
+
+                  return (
+                    <tr key={index}>
+                      <td>
+                        <div className="font-medium">{item.product?.name || 'Custom'}</div>
+                        {item.vatType === 'INCLUDE' && (
+                          <div className="text-xs text-secondary italic">
+                            (Including VAT {item.vatRate}%)
+                          </div>
+                        )}
+                      </td>
+                      {invoice.billingPeriodStart && <td>{period}</td>}
+                      {invoice.items.some((i: any) => i.description) && <td>{item.description}</td>}
+                      <td className="text-right">{item.quantity}</td>
+                      <td className="text-right">{formatCurrency(item.unitPrice)}</td>
+                      <td className="text-right font-medium">{formatCurrency(item.total)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

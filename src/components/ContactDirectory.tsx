@@ -14,6 +14,9 @@ export default function ContactDirectory({ type, title }: { type: string, title:
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [defaultProductId, setDefaultProductId] = useState('');
+  const [customPrice, setCustomPrice] = useState('');
+  const [vatType, setVatType] = useState('EXCLUDE');
+  const [vatRate, setVatRate] = useState('5');
   
   const [products, setProducts] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -38,12 +41,21 @@ export default function ContactDirectory({ type, title }: { type: string, title:
     e.preventDefault();
     setIsSubmitting(true);
     
+    const customRates = defaultProductId ? [{
+      productId: defaultProductId,
+      rate: parseFloat(customPrice) || 0,
+      vatType: vatType,
+      vatRate: parseFloat(vatRate) || 0
+    }] : [];
+
     const res = await createContact({
-      name, type, email, phone, address, defaultProductId
+      name, type, email, phone, address, defaultProductId,
+      customRates
     });
 
     if (res.success) {
       setName(''); setEmail(''); setPhone(''); setAddress(''); setDefaultProductId('');
+      setCustomPrice(''); setVatType('EXCLUDE'); setVatRate('5');
       setShowForm(false);
       fetchContacts();
     }
@@ -87,12 +99,60 @@ export default function ContactDirectory({ type, title }: { type: string, title:
             {type === 'CUSTOMER' && (
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label>Default Product / Service</label>
-                <select value={defaultProductId} onChange={e => setDefaultProductId(e.target.value)} className="form-control">
+                <select 
+                  value={defaultProductId} 
+                  onChange={e => {
+                    const id = e.target.value;
+                    setDefaultProductId(id);
+                    if (id) {
+                      const p = products.find(prod => prod.id === id);
+                      if (p) setCustomPrice(p.price.toString());
+                    } else {
+                      setCustomPrice('');
+                    }
+                  }} 
+                  className="form-control"
+                >
                   <option value="">None (Select Manually in Invoice)</option>
                   {products.map(p => (
                     <option key={p.id} value={p.id}>{p.name} - ৳{p.price}</option>
                   ))}
                 </select>
+                
+                {defaultProductId && (
+                  <div className="grid-3-col mt-4">
+                    <div className="form-group">
+                      <label>Custom Price (৳)</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={customPrice} 
+                        onChange={e => setCustomPrice(e.target.value)} 
+                        className="form-control" 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>VAT Option</label>
+                      <select value={vatType} onChange={e => setVatType(e.target.value)} className="form-control">
+                        <option value="EXCLUDE">Exclude VAT</option>
+                        <option value="INCLUDE">Include VAT</option>
+                      </select>
+                    </div>
+                    {vatType === 'INCLUDE' && (
+                      <div className="form-group">
+                        <label>VAT Rate (%)</label>
+                        <input 
+                          type="number" 
+                          step="0.1" 
+                          value={vatRate} 
+                          onChange={e => setVatRate(e.target.value)} 
+                          className="form-control" 
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <p className="text-xs text-secondary mt-1">This service will be automatically added when you create an invoice for this customer.</p>
               </div>
             )}
@@ -169,6 +229,8 @@ export default function ContactDirectory({ type, title }: { type: string, title:
         .text-sm { font-size: 0.85rem; }
         
         .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .mt-4 { margin-top: 16px; }
         .form-group { display: flex; flex-direction: column; gap: 8px; }
         label { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
         .form-control { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.95rem; background-color: var(--bg-secondary); }

@@ -22,7 +22,9 @@ export async function getInvoiceById(id: string) {
     where: { id },
     include: {
       contact: true,
-      items: true
+      items: {
+        include: { product: true }
+      }
     }
   });
 }
@@ -31,11 +33,13 @@ export async function createInvoice(data: {
   contactId: string;
   date: string;
   dueDate: string;
+  billingPeriodStart?: string;
+  billingPeriodEnd?: string;
   notes?: string;
   discountAmount?: number;
   taxRate?: number;
   taxAmount?: number;
-  items: { productId?: string; description: string; quantity: number; unitPrice: number }[];
+  items: { productId?: string; description: string; quantity: number; unitPrice: number; vatType?: string; vatRate?: number }[];
 }) {
   try {
     const settings = await getCompanySettings();
@@ -61,6 +65,8 @@ export async function createInvoice(data: {
         invoiceNumber,
         date: new Date(data.date),
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
+        billingPeriodStart: data.billingPeriodStart ? new Date(data.billingPeriodStart) : null,
+        billingPeriodEnd: data.billingPeriodEnd ? new Date(data.billingPeriodEnd) : null,
         contactId: data.contactId,
         subtotal,
         discountAmount,
@@ -73,6 +79,8 @@ export async function createInvoice(data: {
           create: items.map(item => ({
             productId: item.productId,
             description: item.description,
+            vatType: item.vatType || 'EXCLUDE',
+            vatRate: item.vatRate || 0,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             total: item.total
@@ -80,6 +88,34 @@ export async function createInvoice(data: {
         }
       }
     });
+
+    // Save sticky descriptions and rates for the customer
+    for (const item of data.items) {
+      if (item.productId) {
+        await prisma.contactProductRate.upsert({
+          where: {
+            contactId_productId: {
+              contactId: data.contactId,
+              productId: item.productId
+            }
+          },
+          update: {
+            lastDescription: item.description,
+            rate: item.unitPrice,
+            vatType: item.vatType || 'EXCLUDE',
+            vatRate: item.vatRate || 0
+          },
+          create: {
+            contactId: data.contactId,
+            productId: item.productId,
+            rate: item.unitPrice,
+            lastDescription: item.description,
+            vatType: item.vatType || 'EXCLUDE',
+            vatRate: item.vatRate || 0
+          }
+        });
+      }
+    }
 
     revalidatePath('/invoices');
     return { success: true, id: invoice.id };
@@ -93,11 +129,13 @@ export async function updateInvoice(id: string, data: {
   contactId: string;
   date: string;
   dueDate: string;
+  billingPeriodStart?: string;
+  billingPeriodEnd?: string;
   notes?: string;
   discountAmount?: number;
   taxRate?: number;
   taxAmount?: number;
-  items: { productId?: string; description: string; quantity: number; unitPrice: number }[];
+  items: { productId?: string; description: string; quantity: number; unitPrice: number; vatType?: string; vatRate?: number }[];
 }) {
   try {
     const existing = await prisma.invoice.findUnique({ where: { id } });
@@ -125,6 +163,8 @@ export async function updateInvoice(id: string, data: {
       data: {
         date: new Date(data.date),
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
+        billingPeriodStart: data.billingPeriodStart ? new Date(data.billingPeriodStart) : null,
+        billingPeriodEnd: data.billingPeriodEnd ? new Date(data.billingPeriodEnd) : null,
         contactId: data.contactId,
         subtotal,
         discountAmount,
@@ -136,6 +176,8 @@ export async function updateInvoice(id: string, data: {
           create: items.map(item => ({
             productId: item.productId,
             description: item.description,
+            vatType: item.vatType || 'EXCLUDE',
+            vatRate: item.vatRate || 0,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             total: item.total
@@ -143,6 +185,34 @@ export async function updateInvoice(id: string, data: {
         }
       }
     });
+
+    // Save sticky descriptions and rates for the customer
+    for (const item of data.items) {
+      if (item.productId) {
+        await prisma.contactProductRate.upsert({
+          where: {
+            contactId_productId: {
+              contactId: data.contactId,
+              productId: item.productId
+            }
+          },
+          update: {
+            lastDescription: item.description,
+            rate: item.unitPrice,
+            vatType: item.vatType || 'EXCLUDE',
+            vatRate: item.vatRate || 0
+          },
+          create: {
+            contactId: data.contactId,
+            productId: item.productId,
+            rate: item.unitPrice,
+            lastDescription: item.description,
+            vatType: item.vatType || 'EXCLUDE',
+            vatRate: item.vatRate || 0
+          }
+        });
+      }
+    }
 
     revalidatePath('/invoices');
     revalidatePath(`/invoices/${id}`);
