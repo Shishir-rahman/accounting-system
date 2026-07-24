@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { getProducts, createProduct, updateProduct } from '@/actions/catalog';
 
+export const dynamic = 'force-dynamic';
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
