@@ -61,7 +61,7 @@ export default function ProductsPage() {
       type,
       price: isPriceOptional ? 0 : (parseFloat(price) || 0),
       description,
-      category: category || null
+      category: category || undefined
     };
 
     const res = editingId

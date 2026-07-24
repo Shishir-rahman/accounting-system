@@ -62,16 +62,18 @@ export async function createInvoice(data: {
     const discountNote = data.discountNote || null;
 
     const excludeVatSum = items.reduce((sum, item) => {
-      if (item.vatType === 'EXCLUDE' && item.vatRate > 0) {
-        return sum + (item.quantity * item.unitPrice * (item.vatRate / 100));
+      const rate = item.vatRate || 0;
+      if (item.vatType === 'EXCLUDE' && rate > 0) {
+        return sum + (item.quantity * item.unitPrice * (rate / 100));
       }
       return sum;
     }, 0);
 
     const includeVatSum = items.reduce((sum, item) => {
-      if (item.vatType === 'INCLUDE' && item.vatRate > 0) {
+      const rate = item.vatRate || 0;
+      if (item.vatType === 'INCLUDE' && rate > 0) {
         const lineTotal = item.quantity * item.unitPrice;
-        return sum + (lineTotal - (lineTotal / (1 + item.vatRate / 100)));
+        return sum + (lineTotal - (lineTotal / (1 + rate / 100)));
       }
       return sum;
     }, 0);
@@ -187,16 +189,18 @@ export async function updateInvoice(id: string, data: {
     const discountNote = data.discountNote || null;
 
     const excludeVatSum = items.reduce((sum, item) => {
-      if (item.vatType === 'EXCLUDE' && item.vatRate > 0) {
-        return sum + (item.quantity * item.unitPrice * (item.vatRate / 100));
+      const rate = item.vatRate || 0;
+      if (item.vatType === 'EXCLUDE' && rate > 0) {
+        return sum + (item.quantity * item.unitPrice * (rate / 100));
       }
       return sum;
     }, 0);
 
     const includeVatSum = items.reduce((sum, item) => {
-      if (item.vatType === 'INCLUDE' && item.vatRate > 0) {
+      const rate = item.vatRate || 0;
+      if (item.vatType === 'INCLUDE' && rate > 0) {
         const lineTotal = item.quantity * item.unitPrice;
-        return sum + (lineTotal - (lineTotal / (1 + item.vatRate / 100)));
+        return sum + (lineTotal - (lineTotal / (1 + rate / 100)));
       }
       return sum;
     }, 0);

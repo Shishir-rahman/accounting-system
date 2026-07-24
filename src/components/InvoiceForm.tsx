@@ -164,7 +164,8 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
                   const priceToUse = customData ? customData.rate : product.price;
                   const descriptionToUse = customData?.lastDescription || product.name;
                   const vType = customData?.vatType || 'EXCLUDE';
-                  const vRate = customData?.vatRate !== undefined && customData.vatRate > 0 ? customData.vatRate : (vType === 'EXCLUDE' ? 5 : 0);
+                  const cVat = customData?.vatRate ?? null;
+                  const vRate = cVat !== null && cVat > 0 ? cVat : (vType === 'EXCLUDE' ? 5 : 0);
 
                   setItems([{
                     id: Date.now(),
@@ -218,7 +219,8 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
             const priceToUse = customData ? customData.rate : product.price;
             const descriptionToUse = customData?.lastDescription || product.name;
             const vType = customData?.vatType || 'EXCLUDE';
-            const vRate = customData?.vatRate !== undefined && customData.vatRate > 0 ? customData.vatRate : (vType === 'EXCLUDE' ? 5 : 0);
+            const cVat = customData?.vatRate ?? null;
+            const vRate = cVat !== null && cVat > 0 ? cVat : (vType === 'EXCLUDE' ? 5 : 0);
             return { 
               ...item, 
               productId: value as string, 
