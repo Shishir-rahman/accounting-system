@@ -88,8 +88,14 @@ export default function ClientEditContact({ contact }: { contact: any }) {
               <input type="text" value={name} onChange={e => setName(e.target.value)} required className="form-control" />
             </div>
             <div className="form-group">
-              <label>Email Address</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="form-control" />
+              <label>Email Address(es) <span className="text-xs text-secondary font-normal">(Comma separated for multiple emails)</span></label>
+              <input 
+                type="text" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                placeholder="e.g. info@company.com, accounts@company.com"
+                className="form-control" 
+              />
             </div>
           </div>
 

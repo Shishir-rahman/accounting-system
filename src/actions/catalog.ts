@@ -9,7 +9,7 @@ export async function getProducts() {
   });
 }
 
-export async function createProduct(data: { name: string; type: string; price: number; description?: string }) {
+export async function createProduct(data: { name: string; type: string; price: number; description?: string; category?: string }) {
   try {
     const product = await prisma.product.create({
       data: {
@@ -17,6 +17,7 @@ export async function createProduct(data: { name: string; type: string; price: n
         type: data.type, // 'PRODUCT' or 'SERVICE'
         price: data.price,
         description: data.description,
+        category: data.category || null,
       }
     });
     revalidatePath('/products');
@@ -27,7 +28,7 @@ export async function createProduct(data: { name: string; type: string; price: n
   }
 }
 
-export async function updateProduct(id: string, data: { name: string; type: string; price: number; description?: string }) {
+export async function updateProduct(id: string, data: { name: string; type: string; price: number; description?: string; category?: string }) {
   try {
     const product = await prisma.product.update({
       where: { id },
@@ -35,7 +36,8 @@ export async function updateProduct(id: string, data: { name: string; type: stri
         name: data.name,
         type: data.type,
         price: data.price,
-        description: data.description
+        description: data.description,
+        category: data.category || null,
       }
     });
     revalidatePath('/products');

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react';
-import { sendInvoice } from '@/actions/invoice';
+import { sendInvoice, getInvoicePdfBase64 } from '@/actions/invoice';
 import { useRouter } from 'next/navigation';
 
 export default function InvoiceActions({ invoiceId, status }: { invoiceId: string, status: string }) {
@@ -9,6 +9,14 @@ export default function InvoiceActions({ invoiceId, status }: { invoiceId: strin
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const downloadPdf = (base64: string, filename: string) => {
+    const linkSource = `data:application/pdf;base64,${base64}`;
+    const downloadLink = document.createElement("a");
+    downloadLink.href = linkSource;
+    downloadLink.download = filename;
+    downloadLink.click();
+  };
 
   const handleSend = async () => {
     setLoading(true);
@@ -18,7 +26,18 @@ export default function InvoiceActions({ invoiceId, status }: { invoiceId: strin
     const res = await sendInvoice(invoiceId);
 
     if (res.success) {
-      setSuccess('Invoice sent successfully! A Journal Entry has been created.');
+      setSuccess('Invoice sent successfully! PDF invoice is downloading...');
+      
+      // Auto download PDF file to browser Download folder
+      try {
+        const pdfRes = await getInvoicePdfBase64(invoiceId);
+        if (pdfRes.success && pdfRes.base64) {
+          downloadPdf(pdfRes.base64, pdfRes.filename);
+        }
+      } catch (e) {
+        console.error('Auto PDF download error:', e);
+      }
+
       router.refresh();
     } else {
       setError(res.error || 'Failed to send invoice');
@@ -41,13 +60,13 @@ export default function InvoiceActions({ invoiceId, status }: { invoiceId: strin
           🖨️ Print / Save PDF
         </button>
 
-        {status === 'DRAFT' ? (
-          <button onClick={handleSend} disabled={loading} className="btn btn-primary flex-1">
-            {loading ? 'Sending...' : '✉️ Send via Email (Finalize)'}
+        {status === 'PAID' ? (
+          <button disabled className="btn btn-primary disabled flex-1">
+            ✅ Paid
           </button>
         ) : (
-          <button disabled className="btn btn-primary disabled flex-1">
-            ✅ Invoice Sent
+          <button onClick={handleSend} disabled={loading} className="btn btn-primary flex-1">
+            {loading ? 'Sending Email...' : '✉️ Send Invoice Email'}
           </button>
         )}
       </div>

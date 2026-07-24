@@ -147,12 +147,12 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
               </div>
               <div className="meta-item">
                 <span className="section-label">Date:</span>
-                <span>{new Date(invoice.date).toLocaleDateString()}</span>
+                <span>{new Date(invoice.date).toLocaleDateString('en-GB')}</span>
               </div>
               {invoice.dueDate && (
                 <div className="meta-item">
                   <span className="section-label">Due Date:</span>
-                  <span>{new Date(invoice.dueDate).toLocaleDateString()}</span>
+                  <span>{new Date(invoice.dueDate).toLocaleDateString('en-GB')}</span>
                 </div>
               )}
             </div>
@@ -176,11 +176,15 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
                   const formatDate = (dateStr: any) => {
                     if (!dateStr) return '';
                     const d = new Date(dateStr);
-                    return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+                    const day = String(d.getDate()).padStart(2, '0');
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const year = d.getFullYear();
+                    return `${day}/${month}/${year}`;
                   };
-                  const period = (invoice.billingPeriodStart && invoice.billingPeriodEnd)
+                  const isNoPeriod = item.product && (item.product.category === 'IMPLEMENTATION' || item.product.category === 'PROJECT');
+                  const period = (!isNoPeriod && invoice.billingPeriodStart && invoice.billingPeriodEnd)
                     ? `${formatDate(invoice.billingPeriodStart)} to ${formatDate(invoice.billingPeriodEnd)}`
-                    : '';
+                    : '-';
 
                   return (
                     <tr key={index}>
@@ -217,10 +221,10 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
                 <div className="text-sm mt-2">
                   <p className="font-bold">Bank Details:</p>
                   <p>Account Name: Sokrio Technologies Ltd.</p>
-                  <p>A/C number: 1361115346000</p>
-                  <p>Bank Name: AB Bank PLC.</p>
+                  <p>A/C number: 0832101000024879</p>
+                  <p>Bank Name: UCB</p>
                   <p>Branch Name: Uttara</p>
-                  <p>Routing Number: 020264639</p>
+                  <p>Routing Number: 245264630</p>
                   <p className="mt-2">Or</p>
                   <p>bKash Merchant Number: 01798 013530</p>
                 </div>
@@ -239,14 +243,26 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
               </div>
               {invoice.discountAmount > 0 && (
                 <div className="total-row-standard">
-                  <span>Discount:</span>
+                  <span>Discount {invoice.discountNote ? `(${invoice.discountNote})` : ''}:</span>
                   <span className="text-danger">-{formatCurrency(invoice.discountAmount)}</span>
                 </div>
               )}
-              <div className="total-row-standard">
-                <span>Tax ({invoice.taxRate}%):</span>
-                <span>{formatCurrency(invoice.taxAmount)}</span>
-              </div>
+              {(() => {
+                const hasExcludeVat = invoice.items.some((i: any) => i.vatType === 'EXCLUDE' && i.vatRate > 0) || 
+                                      (invoice.vatRate > 0 && !invoice.items.some((i: any) => i.vatType === 'INCLUDE'));
+                return hasExcludeVat && invoice.vatAmount > 0 && (
+                  <div className="total-row-standard">
+                    <span>VAT {invoice.vatRate > 0 ? `(${invoice.vatRate}%)` : ''}:</span>
+                    <span>{formatCurrency(invoice.vatAmount)}</span>
+                  </div>
+                );
+              })()}
+              {invoice.taxAmount > 0 && (
+                <div className="total-row-standard">
+                  <span>TAX / AIT {invoice.taxRate > 0 ? `(${invoice.taxRate}%)` : ''}:</span>
+                  <span>{formatCurrency(invoice.taxAmount)}</span>
+                </div>
+              )}
               <div className="grand-total-standard">
                 <span>Total Due:</span>
                 <span>{formatCurrency(invoice.totalAmount)}</span>

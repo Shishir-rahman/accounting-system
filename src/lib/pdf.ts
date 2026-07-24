@@ -98,17 +98,28 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   page.drawText(invoice.contact.name, { x: 50, y: height - 175, size: 11, font: boldFont });
   page.drawText(invoice.contact.address || '', { x: 50, y: height - 190, size: 9, font, maxWidth: 200 });
 
+  function formatDate(d: any): string {
+    if (!d) return '';
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
   page.drawText('Invoice No:', { x: width - 200, y: height - 160, size: 10, font: boldFont });
   page.drawText(invoice.invoiceNumber, { x: width - 120, y: height - 160, size: 10, font });
   page.drawText('Date:', { x: width - 200, y: height - 175, size: 10, font: boldFont });
-  page.drawText(new Date(invoice.date).toLocaleDateString(), { x: width - 120, y: height - 175, size: 10, font });
+  page.drawText(formatDate(invoice.date), { x: width - 120, y: height - 175, size: 10, font });
   if (invoice.dueDate) {
     page.drawText('Due Date:', { x: width - 200, y: height - 190, size: 10, font: boldFont });
-    page.drawText(new Date(invoice.dueDate).toLocaleDateString(), { x: width - 120, y: height - 190, size: 10, font });
+    page.drawText(formatDate(invoice.dueDate), { x: width - 120, y: height - 190, size: 10, font });
   }
 
   // ── Items Table with dynamic columns ─────────────────────────────────────
-  const hasPeriod = !!invoice.billingPeriodStart;
+  const isNoPeriodCategory = invoice.category === 'IMPLEMENTATION' || invoice.category === 'PROJECT';
+  const hasPeriod = !isNoPeriodCategory && !!invoice.billingPeriodStart && !!invoice.billingPeriodEnd;
   const hasDesc   = invoice.items.some((i: any) => i.description);
 
   const TL = 50;
@@ -150,13 +161,7 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
     page.drawText(col.label, { x: col.x + 5, y: HEADER_Y - 14, size: 8, font: boldFont, color: blueDark });
   });
 
-  // Helper for date formatting
-  const formatDate = (dateStr: any) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
-  };
-  const periodText = (invoice.billingPeriodStart && invoice.billingPeriodEnd)
+  const periodText = (!isNoPeriodCategory && invoice.billingPeriodStart && invoice.billingPeriodEnd)
     ? `${formatDate(invoice.billingPeriodStart)} to ${formatDate(invoice.billingPeriodEnd)}`
     : '';
 
@@ -192,7 +197,18 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
           page.drawText(`(Including VAT ${item.vatRate}%)`, { x: col.x + 5, y: rowY + 2, size: 6, font, color: rgb(0.4, 0.4, 0.4) });
         }
       } else if (col.id === 'period') {
-        page.drawText(periodText, { x: col.x + 5, y: rowY + 7, size: 7, font });
+        let itemPeriodText = periodText;
+        let pCat = item.product?.category;
+        if (!pCat && item.productId) {
+          try {
+            const p = await prisma.product.findUnique({ where: { id: item.productId } });
+            if (p) pCat = p.category;
+          } catch (e) {}
+        }
+        if (pCat === 'IMPLEMENTATION' || pCat === 'PROJECT') {
+          itemPeriodText = '-';
+        }
+        page.drawText(itemPeriodText, { x: col.x + 5, y: rowY + 7, size: 7, font });
       } else if (col.id === 'desc') {
         const descText = item.description || '';
         const textWidth = font.widthOfTextAtSize(descText, 8);
@@ -233,18 +249,32 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
 
   // ── Totals ────────────────────────────────────────────────────────────────
   rowCursorY -= 25;
-  const totalsX = width - 210;
-  const totalsValX = width - 80;
+  const totalsX = width - 230;
+  const totalsValX = width - 50;
   const drawTotalRow = (label: string, value: string, y: number, bold = false) => {
-    page.drawText(label, { x: totalsX, y, size: 10, font: bold ? boldFont : font });
-    page.drawText(value, { x: totalsValX - font.widthOfTextAtSize(value, 10), y, size: 10, font: bold ? boldFont : font });
+    page.drawText(label, { x: totalsX, y, size: 9, font: bold ? boldFont : font });
+    page.drawText(value, { x: totalsValX - font.widthOfTextAtSize(value, 9), y, size: 9, font: bold ? boldFont : font });
   };
   drawTotalRow('Subtotal:', invoice.subtotal.toFixed(2), rowCursorY);
-  if (invoice.discountAmount > 0) { rowCursorY -= 16; drawTotalRow('Discount:', `-${invoice.discountAmount.toFixed(2)}`, rowCursorY); }
-  rowCursorY -= 16;
-  drawTotalRow(`Tax (${invoice.taxRate}%):`, invoice.taxAmount.toFixed(2), rowCursorY);
+  if (invoice.discountAmount > 0) { 
+    rowCursorY -= 16; 
+    const discLabel = invoice.discountNote ? `Discount (${invoice.discountNote}):` : 'Discount:';
+    drawTotalRow(discLabel, `-${invoice.discountAmount.toFixed(2)}`, rowCursorY); 
+  }
+  const hasExcludeVat = invoice.items.some((i: any) => i.vatType === 'EXCLUDE' && i.vatRate > 0) || 
+                        (invoice.vatRate > 0 && !invoice.items.some((i: any) => i.vatType === 'INCLUDE'));
+  if (hasExcludeVat && invoice.vatAmount > 0) {
+    rowCursorY -= 16;
+    const vatLabel = invoice.vatRate > 0 ? `VAT (${invoice.vatRate}%):` : 'VAT:';
+    drawTotalRow(vatLabel, invoice.vatAmount.toFixed(2), rowCursorY);
+  }
+  if (invoice.taxAmount > 0) {
+    rowCursorY -= 16;
+    const taxLabel = invoice.taxRate > 0 ? `TAX / AIT (${invoice.taxRate}%):` : 'TAX / AIT:';
+    drawTotalRow(taxLabel, invoice.taxAmount.toFixed(2), rowCursorY);
+  }
   rowCursorY -= 22;
-  page.drawRectangle({ x: totalsX - 5, y: rowCursorY - 4, width: 170, height: 22, color: rgb(0.85, 0.92, 0.98) });
+  page.drawRectangle({ x: totalsX - 5, y: rowCursorY - 4, width: 185, height: 22, color: rgb(0.85, 0.92, 0.98) });
   drawTotalRow('Total Due:', invoice.totalAmount.toFixed(2), rowCursorY, true);
 
   // ── In Words ──────────────────────────────────────────────────────────────
@@ -258,10 +288,10 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   const pLines = [
     'Bank Details:',
     'Account Name: Sokrio Technologies Ltd.',
-    'A/C number: 1361115346000',
-    'Bank Name: AB Bank PLC.',
+    'A/C number: 0832101000024879',
+    'Bank Name: UCB',
     'Branch Name: Uttara',
-    'Routing Number: 020264639',
+    'Routing Number: 245264630',
     'Or',
     'bKash Merchant Number: 01798 013530',
   ];

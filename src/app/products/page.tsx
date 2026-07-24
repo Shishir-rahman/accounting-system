@@ -11,6 +11,7 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [type, setType] = useState('PRODUCT');
+  const [category, setCategory] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,6 +32,7 @@ export default function ProductsPage() {
     setEditingId(product.id);
     setName(product.name);
     setType(product.type);
+    setCategory(product.category || '');
     setPrice(product.price.toString());
     setDescription(product.description || '');
     setShowForm(true);
@@ -42,6 +44,7 @@ export default function ProductsPage() {
     setEditingId(null);
     setName('');
     setType('PRODUCT');
+    setCategory('');
     setPrice('');
     setDescription('');
   };
@@ -50,11 +53,13 @@ export default function ProductsPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    const isPriceOptional = category === 'IMPLEMENTATION' || category === 'PROJECT';
     const payload = {
       name,
       type,
-      price: parseFloat(price) || 0,
-      description
+      price: isPriceOptional ? 0 : (parseFloat(price) || 0),
+      description,
+      category: category || null
     };
 
     const res = editingId
@@ -100,8 +105,28 @@ export default function ProductsPage() {
               </select>
             </div>
             <div className="form-group">
-              <label>Default Price (৳)</label>
-              <input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} required className="form-control" placeholder="0.00" />
+              <label>Category (Optional)</label>
+              <select value={category} onChange={e => setCategory(e.target.value)} className="form-control">
+                <option value="">None / Standard</option>
+                <option value="MONTHLY_BILLING">Monthly billing</option>
+                <option value="ADVANCE_ANALYTICS">Advance analytics</option>
+                <option value="IMPLEMENTATION">Implementation</option>
+                <option value="PROJECT">Project</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Default Price (৳) {(category === 'IMPLEMENTATION' || category === 'PROJECT') && '(Not Applicable)'}</label>
+              <input 
+                type="number" 
+                step="0.01" 
+                min="0" 
+                value={category === 'IMPLEMENTATION' || category === 'PROJECT' ? '' : price} 
+                onChange={e => setPrice(e.target.value)} 
+                required={category !== 'IMPLEMENTATION' && category !== 'PROJECT'} 
+                disabled={category === 'IMPLEMENTATION' || category === 'PROJECT'} 
+                className="form-control" 
+                placeholder={category === 'IMPLEMENTATION' || category === 'PROJECT' ? "Set during invoicing" : "0.00"} 
+              />
             </div>
             <div className="form-group">
               <label>Description (Optional)</label>
@@ -126,6 +151,7 @@ export default function ProductsPage() {
                 <tr>
                   <th>Name</th>
                   <th>Type</th>
+                  <th>Category</th>
                   <th>Description</th>
                   <th className="text-right">Default Price</th>
                   <th className="text-center">Action</th>
@@ -134,7 +160,7 @@ export default function ProductsPage() {
               <tbody>
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-secondary">No items found. Add your first product or service.</td>
+                    <td colSpan={6} className="text-center py-8 text-secondary">No items found. Add your first product or service.</td>
                   </tr>
                 ) : (
                   products.map(item => (
@@ -145,8 +171,21 @@ export default function ProductsPage() {
                           {item.type}
                         </span>
                       </td>
+                      <td>
+                        {item.category === 'MONTHLY_BILLING' && 'Monthly billing'}
+                        {item.category === 'ADVANCE_ANALYTICS' && 'Advance analytics'}
+                        {item.category === 'IMPLEMENTATION' && 'Implementation'}
+                        {item.category === 'PROJECT' && 'Project'}
+                        {!item.category && '-'}
+                      </td>
                       <td className="text-secondary">{item.description || '-'}</td>
-                      <td className="text-right font-medium">{formatCurrency(item.price)}</td>
+                      <td className="text-right font-medium">
+                        {(item.category === 'IMPLEMENTATION' || item.category === 'PROJECT') ? (
+                          <span className="text-xs text-secondary italic">Set during invoicing</span>
+                        ) : (
+                          formatCurrency(item.price)
+                        )}
+                      </td>
                       <td className="text-center">
                         <button onClick={() => handleEdit(item)} className="edit-btn">✏️ Edit</button>
                       </td>
