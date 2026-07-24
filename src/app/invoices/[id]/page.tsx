@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { getInvoiceById } from "@/actions/invoice";
 import { getCompanySettings } from "@/actions/settings";
 import Link from "next/link";
