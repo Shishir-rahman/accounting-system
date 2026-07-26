@@ -323,7 +323,7 @@ From now on, Sokrio is offering your payment (Optional) through bKash ( 01798013
       });
 
       if (!emailResult.success) {
-        return { success: false, error: 'Failed to send email. Please verify recipient email address and mail configuration.' };
+        return { success: false, error: emailResult.error ? `Failed to send email: ${emailResult.error}` : 'Failed to send email.' };
       }
     } else {
       return { success: false, error: `No email address found for contact ${invoice.contact.name}.` };
