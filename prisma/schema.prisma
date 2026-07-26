@@ -50,6 +50,8 @@ model Contact {
   invoices    Invoice[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([type])
 }
 
 model ContactProductRate {
@@ -64,6 +66,7 @@ model ContactProductRate {
   vatRate         Float?   @default(0)
   
   @@unique([contactId, productId])
+  @@index([contactId])
 }
 
 model Invoice {
@@ -95,6 +98,10 @@ model Invoice {
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([contactId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model InvoiceItem {
@@ -112,6 +119,8 @@ model InvoiceItem {
   quantity    Int      @default(1)
   unitPrice   Float    @default(0)
   total       Float    @default(0)
+
+  @@index([invoiceId])
 }
 
 model Product {
