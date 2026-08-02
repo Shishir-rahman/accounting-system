@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 
 export async function sendEmail({
   to,
-  cc = 's.sarker009s@gmail.com',
+  cc = 'sahiuddin@sokrio.com',
   subject,
   text,
   html,
