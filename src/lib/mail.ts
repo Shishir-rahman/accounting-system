@@ -1,12 +1,12 @@
 import nodemailer from 'nodemailer';
 import prisma from '@/lib/prisma';
 
-const smtpUser = process.env.EMAIL_USER || 'sarkershishir4@gmail.com';
+const smtpUser = process.env.EMAIL_USER || 'accounts@sokrio.com';
 const smtpPass = process.env.EMAIL_PASSWORD || 'bruu ixif fmws tohj';
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT || '465'),
   secure: true,
   auth: {
     user: smtpUser,
@@ -73,11 +73,10 @@ export async function sendEmail({
     : effectiveFrom.trim();
 
   const mailOptions = {
-    from: `Sokrio Technologies <${smtpUser}>`,
+    from: effectiveFrom,
     replyTo: senderEmailOnly,
     to: finalTo,
     cc: finalCc,
-    bcc: [senderEmailOnly, 'accounts@sokrio.com'].filter((e, i, a) => e && a.indexOf(e) === i).join(', '),
     subject,
     text,
     html: html || text.replace(/\n/g, '<br>'),
