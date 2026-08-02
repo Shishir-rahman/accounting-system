@@ -18,6 +18,7 @@ export default function SettingsPage() {
 
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
   const [defaultNotes, setDefaultNotes] = useState('');
+  const [defaultCcEmail, setDefaultCcEmail] = useState('sahiuddin@sokrio.com');
   const [logoUrl, setLogoUrl] = useState('');
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function SettingsPage() {
       setCurrency(settings.currency);
       setInvoicePrefix(settings.invoicePrefix || 'INV-');
       setDefaultNotes(settings.defaultNotes || '');
+      setDefaultCcEmail(settings.defaultCcEmail || 'sahiuddin@sokrio.com');
       setLogoUrl(settings.logoUrl || '');
       setLoading(false);
     }
@@ -67,6 +69,7 @@ export default function SettingsPage() {
       currency,
       invoicePrefix,
       defaultNotes,
+      defaultCcEmail,
       logoUrl
     });
 
@@ -166,12 +169,17 @@ export default function SettingsPage() {
             </div>
 
             <div className="card">
-              <h2 className="text-xl font-bold mb-6">Invoice Settings</h2>
+              <h2 className="text-xl font-bold mb-6">Email & Invoice Settings</h2>
               
               <div className="grid-2-col mb-4">
                 <div className="form-group">
                   <label>Invoice Prefix</label>
                   <input type="text" value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value)} className="form-control" placeholder="e.g. INV-" />
+                </div>
+
+                <div className="form-group">
+                  <label>Default Email CC Address</label>
+                  <input type="text" value={defaultCcEmail} onChange={e => setDefaultCcEmail(e.target.value)} className="form-control" placeholder="sahiuddin@sokrio.com" />
                 </div>
                 
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
