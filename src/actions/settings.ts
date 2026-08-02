@@ -13,9 +13,14 @@ export async function getCompanySettings() {
       data: {
         id: 'default',
         companyName: 'My Company',
+        email: 'accounts@sokrio.com',
         currency: 'BDT'
       }
     });
+  }
+
+  if (!settings.email) {
+    settings.email = 'accounts@sokrio.com';
   }
 
   return settings;

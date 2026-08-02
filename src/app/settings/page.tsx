@@ -25,7 +25,7 @@ export default function SettingsPage() {
     async function loadSettings() {
       const settings = await getCompanySettings();
       setCompanyName(settings.companyName);
-      setEmail(settings.email || '');
+      setEmail(settings.email || 'accounts@sokrio.com');
       setPhone(settings.phone || '');
       setAddress(settings.address || '');
       setTaxId(settings.taxId || '');
@@ -137,8 +137,8 @@ export default function SettingsPage() {
                 </div>
                 
                 <div className="form-group">
-                  <label>Email Address</label>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="form-control" />
+                  <label>Sender / From Email Address</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="accounts@sokrio.com" className="form-control" />
                 </div>
                 
                 <div className="form-group">

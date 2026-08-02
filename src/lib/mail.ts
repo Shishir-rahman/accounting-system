@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import prisma from '@/lib/prisma';
 
-const emailUser = process.env.EMAIL_USER || 'sarkershishir4@gmail.com';
+const emailUser = process.env.EMAIL_USER || 'accounts@sokrio.com';
 const emailPass = process.env.EMAIL_PASSWORD || 'bruu ixif fmws tohj';
 
 const transporter = nodemailer.createTransport({
@@ -26,6 +26,20 @@ export async function getDefaultCcEmail(): Promise<string> {
   }
 }
 
+export async function getDefaultFromEmail(): Promise<string> {
+  try {
+    const settings = await prisma.companySettings.findUnique({
+      where: { id: 'default' },
+      select: { email: true, companyName: true }
+    });
+    const fromAddr = settings?.email?.trim() || 'accounts@sokrio.com';
+    const compName = settings?.companyName?.trim() || 'Sokrio Technologies';
+    return `${compName} <${fromAddr}>`;
+  } catch (e) {
+    return `Sokrio Technologies <accounts@sokrio.com>`;
+  }
+}
+
 export async function sendEmail({
   to,
   cc,
@@ -42,6 +56,7 @@ export async function sendEmail({
   attachments?: { filename: string; content: Buffer }[];
 }) {
   const effectiveCc = cc || (await getDefaultCcEmail());
+  const effectiveFrom = await getDefaultFromEmail();
 
   // Clean recipient emails by removing dummy @example.com addresses
   const validTo = to
@@ -54,7 +69,7 @@ export async function sendEmail({
   const finalCc = validTo.length > 0 ? effectiveCc : undefined;
 
   const mailOptions = {
-    from: `Sokrio Technologies <${emailUser}>`,
+    from: effectiveFrom,
     to: finalTo,
     cc: finalCc,
     subject,
