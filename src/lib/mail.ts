@@ -69,7 +69,8 @@ export async function sendEmail({
   const finalCc = validTo.length > 0 ? effectiveCc : undefined;
 
   const mailOptions = {
-    from: effectiveFrom,
+    from: `Sokrio Technologies <${smtpUser}>`,
+    replyTo: effectiveFrom.includes('<') ? effectiveFrom.split('<')[1].replace('>', '').trim() : effectiveFrom,
     to: finalTo,
     cc: finalCc,
     subject,
