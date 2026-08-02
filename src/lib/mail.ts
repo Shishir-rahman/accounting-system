@@ -1,16 +1,16 @@
 import nodemailer from 'nodemailer';
 import prisma from '@/lib/prisma';
 
-const emailUser = process.env.EMAIL_USER || 'accounts@sokrio.com';
-const emailPass = process.env.EMAIL_PASSWORD || 'bruu ixif fmws tohj';
+const smtpUser = process.env.EMAIL_USER || 'sarkershishir4@gmail.com';
+const smtpPass = process.env.EMAIL_PASSWORD || 'bruu ixif fmws tohj';
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
   secure: true,
   auth: {
-    user: emailUser,
-    pass: emailPass,
+    user: smtpUser,
+    pass: smtpPass,
   },
 });
 
