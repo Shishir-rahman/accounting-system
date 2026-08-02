@@ -21,6 +21,13 @@ export default function SettingsPage() {
   const [defaultCcEmail, setDefaultCcEmail] = useState('sahiuddin@sokrio.com');
   const [logoUrl, setLogoUrl] = useState('');
 
+  interface AttachmentItem {
+    id: string;
+    filename: string;
+    base64: string;
+  }
+  const [attachmentsList, setAttachmentsList] = useState<AttachmentItem[]>([]);
+
   useEffect(() => {
     async function loadSettings() {
       const settings = await getCompanySettings();
@@ -34,10 +41,46 @@ export default function SettingsPage() {
       setDefaultNotes(settings.defaultNotes || '');
       setDefaultCcEmail(settings.defaultCcEmail || 'sahiuddin@sokrio.com');
       setLogoUrl(settings.logoUrl || '');
+      if (settings.defaultAttachments) {
+        try {
+          const list = JSON.parse(settings.defaultAttachments);
+          if (Array.isArray(list)) {
+            setAttachmentsList(list);
+          }
+        } catch (e) {}
+      }
       setLoading(false);
     }
     loadSettings();
   }, []);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    Array.from(files).forEach((file) => {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError(`File "${file.name}" exceeds 5MB limit.`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachmentsList(prev => [
+          ...prev,
+          {
+            id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+            filename: file.name,
+            base64: reader.result as string
+          }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachmentsList(prev => prev.filter(item => item.id !== id));
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -70,6 +113,7 @@ export default function SettingsPage() {
       invoicePrefix,
       defaultNotes,
       defaultCcEmail,
+      defaultAttachments: JSON.stringify(attachmentsList),
       logoUrl
     });
 
@@ -168,7 +212,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="card">
+            <div className="card mb-6">
               <h2 className="text-xl font-bold mb-6">Email & Invoice Settings</h2>
               
               <div className="grid-2-col mb-4">
@@ -186,6 +230,52 @@ export default function SettingsPage() {
                   <label>Default Notes / Terms</label>
                   <textarea value={defaultNotes} onChange={e => setDefaultNotes(e.target.value)} rows={3} className="form-control" placeholder="Thank you for your business!" />
                 </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <h2 className="text-xl font-bold mb-4">Email Attachments (Default & Additional)</h2>
+              <p className="text-sm text-secondary mb-4">
+                These documents will automatically be attached to all outgoing invoice emails alongside the invoice PDF.
+              </p>
+
+              <div className="mb-4 p-4 rounded bg-gray-50 border border-gray-200">
+                <div className="font-semibold text-sm mb-1 text-primary">📌 Active Default Attachment:</div>
+                <div className="text-sm text-secondary flex items-center gap-2">
+                  <span>📄 <strong>NBR Tax Exemption Certificate</strong> (<code>NBR_Tax_Exemption_Certificate_Sokrio.pdf</code>)</span>
+                  <span className="badge badge-success text-xs">Default Active</span>
+                </div>
+              </div>
+
+              {attachmentsList.length > 0 && (
+                <div className="mb-4">
+                  <label className="font-medium text-sm mb-2 block">Uploaded Additional Attachments:</label>
+                  <div className="space-y-2">
+                    {attachmentsList.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center p-3 rounded bg-slate-100 border text-sm">
+                        <span className="truncate max-w-md font-medium">📎 {item.filename}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => removeAttachment(item.id)}
+                          className="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1 rounded bg-red-50 hover:bg-red-100"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group mt-4">
+                <label className="font-medium text-sm mb-1 block">Upload Additional File (PDF/Doc/Image, Max 5MB)</label>
+                <input 
+                  type="file" 
+                  multiple 
+                  onChange={handleFileUpload} 
+                  className="form-control" 
+                  style={{ padding: '8px' }} 
+                />
               </div>
             </div>
 

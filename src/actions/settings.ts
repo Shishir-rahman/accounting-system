@@ -36,6 +36,7 @@ export async function updateCompanySettings(data: {
   invoicePrefix?: string;
   defaultNotes?: string;
   defaultCcEmail?: string;
+  defaultAttachments?: string;
   logoUrl?: string;
 }) {
   try {
@@ -51,6 +52,7 @@ export async function updateCompanySettings(data: {
         invoicePrefix: data.invoicePrefix || 'INV-',
         defaultNotes: data.defaultNotes,
         defaultCcEmail: data.defaultCcEmail || 'sahiuddin@sokrio.com',
+        defaultAttachments: data.defaultAttachments,
         logoUrl: data.logoUrl
       },
       create: {
@@ -64,6 +66,7 @@ export async function updateCompanySettings(data: {
         invoicePrefix: data.invoicePrefix || 'INV-',
         defaultNotes: data.defaultNotes,
         defaultCcEmail: data.defaultCcEmail || 'sahiuddin@sokrio.com',
+        defaultAttachments: data.defaultAttachments,
         logoUrl: data.logoUrl
       }
     });

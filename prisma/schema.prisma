@@ -138,18 +138,19 @@ model Product {
 }
 
 model CompanySettings {
-  id            String   @id @default("default") // Only one record needed
-  companyName   String   @default("My Company")
-  email         String?
-  phone         String?
-  address       String?
-  taxId         String?
-  currency      String   @default("BDT")
-  invoicePrefix String   @default("INV-")
-  defaultNotes  String?
-  defaultCcEmail String? @default("sahiuddin@sokrio.com")
-  logoUrl       String?
-  updatedAt     DateTime @updatedAt
+  id                 String   @id @default("default") // Only one record needed
+  companyName        String   @default("My Company")
+  email              String?
+  phone              String?
+  address            String?
+  taxId              String?
+  currency           String   @default("BDT")
+  invoicePrefix      String   @default("INV-")
+  defaultNotes       String?
+  defaultCcEmail     String?  @default("sahiuddin@sokrio.com")
+  defaultAttachments String?
+  logoUrl            String?
+  updatedAt          DateTime @updatedAt
 }
 
 model JournalEntryLine {

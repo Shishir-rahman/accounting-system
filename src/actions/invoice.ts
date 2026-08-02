@@ -1,11 +1,52 @@
 'use server'
 
+import fs from 'fs';
+import path from 'path';
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { createJournalEntry } from './journal';
 import { getCompanySettings } from './settings';
 import { sendEmail } from '@/lib/mail';
 import { generateInvoicePDF } from '@/lib/pdf';
+
+function getSystemDefaultAttachments(defaultAttachmentsJson?: string | null): { filename: string; content: Buffer }[] {
+  const attachments: { filename: string; content: Buffer }[] = [];
+
+  // 1. Always include NBR Tax Exemption Certificate PDF by default
+  const nbrPath = path.join(process.cwd(), 'public', 'attachments', 'NBR_Tax_Exemption_Certificate.pdf');
+  if (fs.existsSync(nbrPath)) {
+    try {
+      attachments.push({
+        filename: 'NBR_Tax_Exemption_Certificate_Sokrio.pdf',
+        content: fs.readFileSync(nbrPath)
+      });
+    } catch (e) {
+      console.error('Failed to read NBR certificate PDF:', e);
+    }
+  }
+
+  // 2. Add user-uploaded additional attachments from Settings
+  if (defaultAttachmentsJson) {
+    try {
+      const list = JSON.parse(defaultAttachmentsJson);
+      if (Array.isArray(list)) {
+        for (const item of list) {
+          if (item.filename && item.base64) {
+            const base64Data = item.base64.includes(',') ? item.base64.split(',')[1] : item.base64;
+            attachments.push({
+              filename: item.filename,
+              content: Buffer.from(base64Data, 'base64')
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse defaultAttachments JSON:', e);
+    }
+  }
+
+  return attachments;
+}
 
 export async function getInvoices() {
   return await prisma.invoice.findMany({
@@ -309,6 +350,8 @@ From now on, Sokrio is offering your payment (Optional) through bKash ( 01798013
 
       const settings = await getCompanySettings();
       const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined);
+      const custName = invoice.contact?.name ? invoice.contact.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Customer';
+      const extraAttachments = getSystemDefaultAttachments(settings.defaultAttachments);
 
       const emailResult = await sendEmail({
         to: invoice.contact.email,
@@ -316,9 +359,10 @@ From now on, Sokrio is offering your payment (Optional) through bKash ( 01798013
         text: emailBody,
         attachments: [
           {
-            filename: `${invoice.invoiceNumber}.pdf`,
+            filename: `${custName}_${invoice.invoiceNumber}.pdf`,
             content: pdfBuffer,
           },
+          ...extraAttachments
         ],
       });
 
@@ -499,6 +543,8 @@ From now on, Sokrio is offering your payment (Optional) through bKash to this nu
 
     const settings = await getCompanySettings();
     const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined);
+    const custName = invoice.contact?.name ? invoice.contact.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Customer';
+    const extraAttachments = getSystemDefaultAttachments(settings.defaultAttachments);
 
     const emailResult = await sendEmail({
       to: invoice.contact.email,
@@ -506,9 +552,10 @@ From now on, Sokrio is offering your payment (Optional) through bKash to this nu
       text: emailBody,
       attachments: [
         {
-          filename: `${invoice.invoiceNumber}_Reminder.pdf`,
+          filename: `${custName}_${invoice.invoiceNumber}_Reminder.pdf`,
           content: pdfBuffer,
         },
+        ...extraAttachments
       ],
     });
 
@@ -559,6 +606,8 @@ Thank you for your immediate attention.`;
 
     const settings = await getCompanySettings();
     const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined);
+    const custName = invoice.contact?.name ? invoice.contact.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Customer';
+    const extraAttachments = getSystemDefaultAttachments(settings.defaultAttachments);
 
     const emailResult = await sendEmail({
       to: invoice.contact.email,
@@ -566,9 +615,10 @@ Thank you for your immediate attention.`;
       text: emailBody,
       attachments: [
         {
-          filename: `${invoice.invoiceNumber}_Warning.pdf`,
+          filename: `${custName}_${invoice.invoiceNumber}_Warning.pdf`,
           content: pdfBuffer,
         },
+        ...extraAttachments
       ],
     });
 
