@@ -48,6 +48,10 @@ const customerNames = [
 ];
 
 async function main() {
+  console.log('Clearing old test invoices...');
+  await prisma.invoiceItem.deleteMany({});
+  await prisma.invoice.deleteMany({});
+
   console.log('Seeding customers into database...');
   let count = 0;
   for (const name of customerNames) {
