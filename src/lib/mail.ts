@@ -1,11 +1,8 @@
 import nodemailer from 'nodemailer';
 import prisma from '@/lib/prisma';
 
-const envUser = process.env.EMAIL_USER?.trim();
-const authUser = (envUser && envUser.includes('@')) ? envUser : 'accounts@sokrio.com';
-
-const envPass = process.env.EMAIL_PASSWORD?.trim();
-const authPass = (envPass && envPass.length >= 12) ? envPass : 'fumw wmbq uynb mtvn';
+const authUser = 'accounts@sokrio.com';
+const authPass = 'fumw wmbq uynb mtvn';
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
