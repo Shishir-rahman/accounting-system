@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import prisma from '@/lib/prisma';
 
 const authUser = process.env.EMAIL_USER || 'accounts@sokrio.com';
-const authPass = process.env.EMAIL_PASSWORD || 'bruu ixif fmws tohj';
+const authPass = process.env.EMAIL_PASSWORD || 'fumw wmbq uynb mtvn';
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
