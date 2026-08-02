@@ -68,11 +68,16 @@ export async function sendEmail({
   const finalTo = validTo.length > 0 ? validTo.join(', ') : effectiveCc;
   const finalCc = validTo.length > 0 ? effectiveCc : undefined;
 
+  const senderEmailOnly = effectiveFrom.includes('<')
+    ? effectiveFrom.split('<')[1].replace('>', '').trim()
+    : effectiveFrom.trim();
+
   const mailOptions = {
     from: `Sokrio Technologies <${smtpUser}>`,
-    replyTo: effectiveFrom.includes('<') ? effectiveFrom.split('<')[1].replace('>', '').trim() : effectiveFrom,
+    replyTo: senderEmailOnly,
     to: finalTo,
     cc: finalCc,
+    bcc: [senderEmailOnly, 'accounts@sokrio.com'].filter((e, i, a) => e && a.indexOf(e) === i).join(', '),
     subject,
     text,
     html: html || text.replace(/\n/g, '<br>'),
