@@ -147,6 +147,7 @@ model CompanySettings {
   currency           String   @default("BDT")
   invoicePrefix      String   @default("INV-")
   defaultNotes       String?
+  enableCcEmail      Boolean  @default(true)
   defaultCcEmail     String?  @default("sahiuddin@sokrio.com")
   defaultAttachments String?
   logoUrl            String?

@@ -14,12 +14,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function getDefaultCcEmail(): Promise<string> {
+export async function getDefaultCcEmail(): Promise<string | null> {
   try {
     const settings = await prisma.companySettings.findUnique({
       where: { id: 'default' },
-      select: { defaultCcEmail: true }
+      select: { enableCcEmail: true, defaultCcEmail: true }
     });
+    if (settings && settings.enableCcEmail === false) {
+      return null;
+    }
     return settings?.defaultCcEmail || 'sahiuddin@sokrio.com';
   } catch (e) {
     return 'sahiuddin@sokrio.com';
@@ -55,7 +58,8 @@ export async function sendEmail({
   html?: string;
   attachments?: { filename: string; content: Buffer }[];
 }) {
-  const effectiveCc = cc || (await getDefaultCcEmail());
+  const defaultCc = await getDefaultCcEmail();
+  const effectiveCc = cc !== undefined ? cc : (defaultCc || undefined);
   const effectiveFrom = await getDefaultFromEmail();
 
   // Clean recipient emails by removing dummy @example.com addresses
@@ -64,9 +68,9 @@ export async function sendEmail({
     .map(e => e.trim())
     .filter(e => e && !e.toLowerCase().endsWith('@example.com'));
 
-  // If no valid customer email remains, route primary recipient to CC email
-  const finalTo = validTo.length > 0 ? validTo.join(', ') : effectiveCc;
-  const finalCc = validTo.length > 0 ? effectiveCc : undefined;
+  // If no valid customer email remains, route primary recipient to CC email (or fallback)
+  const finalTo = validTo.length > 0 ? validTo.join(', ') : (effectiveCc || 'accounts@sokrio.com');
+  const finalCc = validTo.length > 0 ? (effectiveCc || undefined) : undefined;
 
   const senderEmailOnly = effectiveFrom.includes('<')
     ? effectiveFrom.split('<')[1].replace('>', '').trim()

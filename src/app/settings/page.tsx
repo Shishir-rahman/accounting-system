@@ -18,6 +18,7 @@ export default function SettingsPage() {
 
   const [invoicePrefix, setInvoicePrefix] = useState('INV-');
   const [defaultNotes, setDefaultNotes] = useState('');
+  const [enableCcEmail, setEnableCcEmail] = useState(true);
   const [defaultCcEmail, setDefaultCcEmail] = useState('sahiuddin@sokrio.com');
   const [logoUrl, setLogoUrl] = useState('');
 
@@ -39,6 +40,7 @@ export default function SettingsPage() {
       setCurrency(settings.currency);
       setInvoicePrefix(settings.invoicePrefix || 'INV-');
       setDefaultNotes(settings.defaultNotes || '');
+      setEnableCcEmail(settings.enableCcEmail ?? true);
       setDefaultCcEmail(settings.defaultCcEmail || 'sahiuddin@sokrio.com');
       setLogoUrl(settings.logoUrl || '');
       if (settings.defaultAttachments) {
@@ -112,6 +114,7 @@ export default function SettingsPage() {
       currency,
       invoicePrefix,
       defaultNotes,
+      enableCcEmail,
       defaultCcEmail,
       defaultAttachments: JSON.stringify(attachmentsList),
       logoUrl
@@ -216,15 +219,48 @@ export default function SettingsPage() {
               <h2 className="text-xl font-bold mb-6">Email & Invoice Settings</h2>
               
               <div className="grid-2-col mb-4">
-                <div className="form-group">
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label>Invoice Prefix</label>
                   <input type="text" value={invoicePrefix} onChange={e => setInvoicePrefix(e.target.value)} className="form-control" placeholder="e.g. INV-" />
                 </div>
 
-                <div className="form-group">
-                  <label>Default Email CC Address</label>
-                  <input type="text" value={defaultCcEmail} onChange={e => setDefaultCcEmail(e.target.value)} className="form-control" placeholder="sahiuddin@sokrio.com" />
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: enableCcEmail ? '#f0fdf4' : '#f8fafc', borderRadius: '10px', border: enableCcEmail ? '1px solid #bbf7d0' : '1px solid #e2e8f0', transition: 'all 0.2s' }}>
+                    <div>
+                      <span style={{ fontWeight: 600, display: 'block', fontSize: '0.95rem', color: enableCcEmail ? '#15803d' : '#334155' }}>
+                        {enableCcEmail ? '✅ Default Email CC Copy: Enabled (ON)' : '⏸️ Default Email CC Copy: Disabled (OFF)'}
+                      </span>
+                      <span style={{ fontSize: '0.825rem', color: '#64748b' }}>
+                        {enableCcEmail ? 'Outgoing invoice emails will automatically send a CC copy.' : 'Outgoing invoice emails will NOT send any CC copy.'}
+                      </span>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px', cursor: 'pointer', margin: 0 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={enableCcEmail} 
+                        onChange={e => setEnableCcEmail(e.target.checked)} 
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span style={{
+                        position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: enableCcEmail ? '#16a34a' : '#cbd5e1',
+                        transition: '.3s', borderRadius: '26px'
+                      }}>
+                        <span style={{
+                          position: 'absolute', content: '""', height: '20px', width: '20px', left: enableCcEmail ? '26px' : '3px', bottom: '3px',
+                          backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                        }} />
+                      </span>
+                    </label>
+                  </div>
                 </div>
+
+                {enableCcEmail && (
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label>Default Email CC Address</label>
+                    <input type="text" value={defaultCcEmail} onChange={e => setDefaultCcEmail(e.target.value)} className="form-control" placeholder="sahiuddin@sokrio.com" />
+                  </div>
+                )}
                 
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label>Default Notes / Terms</label>

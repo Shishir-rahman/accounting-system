@@ -35,6 +35,7 @@ export async function updateCompanySettings(data: {
   currency: string;
   invoicePrefix?: string;
   defaultNotes?: string;
+  enableCcEmail?: boolean;
   defaultCcEmail?: string;
   defaultAttachments?: string;
   logoUrl?: string;
@@ -51,6 +52,7 @@ export async function updateCompanySettings(data: {
         currency: data.currency,
         invoicePrefix: data.invoicePrefix || 'INV-',
         defaultNotes: data.defaultNotes,
+        enableCcEmail: data.enableCcEmail ?? true,
         defaultCcEmail: data.defaultCcEmail || 'sahiuddin@sokrio.com',
         defaultAttachments: data.defaultAttachments,
         logoUrl: data.logoUrl
@@ -65,6 +67,7 @@ export async function updateCompanySettings(data: {
         currency: data.currency,
         invoicePrefix: data.invoicePrefix || 'INV-',
         defaultNotes: data.defaultNotes,
+        enableCcEmail: data.enableCcEmail ?? true,
         defaultCcEmail: data.defaultCcEmail || 'sahiuddin@sokrio.com',
         defaultAttachments: data.defaultAttachments,
         logoUrl: data.logoUrl
