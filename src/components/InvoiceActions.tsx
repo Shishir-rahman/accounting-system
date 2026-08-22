@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 export default function InvoiceActions({ invoiceId, status }: { invoiceId: string, status: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -16,6 +17,23 @@ export default function InvoiceActions({ invoiceId, status }: { invoiceId: strin
     downloadLink.href = linkSource;
     downloadLink.download = filename;
     downloadLink.click();
+  };
+
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    setError('');
+    try {
+      const pdfRes = await getInvoicePdfBase64(invoiceId);
+      if (pdfRes.success && pdfRes.base64 && pdfRes.filename) {
+        downloadPdf(pdfRes.base64, pdfRes.filename);
+      } else {
+        setError(pdfRes.error || 'Failed to download PDF');
+      }
+    } catch (e) {
+      console.error('PDF download error:', e);
+      setError('Failed to download PDF');
+    }
+    setDownloading(false);
   };
 
   const handleSend = async () => {
@@ -31,7 +49,7 @@ export default function InvoiceActions({ invoiceId, status }: { invoiceId: strin
       // Auto download PDF file to browser Download folder
       try {
         const pdfRes = await getInvoicePdfBase64(invoiceId);
-        if (pdfRes.success && pdfRes.base64) {
+        if (pdfRes.success && pdfRes.base64 && pdfRes.filename) {
           downloadPdf(pdfRes.base64, pdfRes.filename);
         }
       } catch (e) {
@@ -55,20 +73,26 @@ export default function InvoiceActions({ invoiceId, status }: { invoiceId: strin
       {error && <div className="alert alert-danger mb-4">{error}</div>}
       {success && <div className="alert alert-success mb-4">{success}</div>}
 
-      <div className="flex gap-4">
-        <button onClick={handlePrint} className="btn btn-secondary">
-          🖨️ Print / Save PDF
+      <div className="flex flex-col gap-3">
+        <button onClick={handleDownloadPdf} disabled={downloading} className="btn btn-secondary w-full" style={{ justifyContent: 'center' }}>
+          {downloading ? 'Generating PDF...' : '📥 Download PDF'}
         </button>
 
-        {status === 'PAID' ? (
-          <button disabled className="btn btn-primary disabled flex-1">
-            ✅ Paid
+        <div className="flex gap-3">
+          <button onClick={handlePrint} className="btn btn-secondary flex-1" style={{ justifyContent: 'center' }}>
+            🖨️ Print / Save
           </button>
-        ) : (
-          <button onClick={handleSend} disabled={loading} className="btn btn-primary flex-1">
-            {loading ? 'Sending Email...' : '✉️ Send Invoice Email'}
-          </button>
-        )}
+
+          {status === 'PAID' ? (
+            <button disabled className="btn btn-primary disabled flex-1" style={{ justifyContent: 'center' }}>
+              ✅ Paid
+            </button>
+          ) : (
+            <button onClick={handleSend} disabled={loading} className="btn btn-primary flex-1" style={{ justifyContent: 'center' }}>
+              {loading ? 'Sending...' : '✉️ Send Email'}
+            </button>
+          )}
+        </div>
       </div>
 
       {status === 'DRAFT' && (

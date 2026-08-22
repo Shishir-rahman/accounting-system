@@ -8,6 +8,16 @@ import { notFound } from "next/navigation";
 import InvoiceActions from "@/components/InvoiceActions";
 import { numberToWords } from "@/lib/utils";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const invoice = await getInvoiceById(resolvedParams.id);
+  if (!invoice) return { title: 'Invoice' };
+  const clientName = invoice.contact?.name ? invoice.contact.name.replace(/[/\\?%*:|"<>]/g, ' ') : 'Invoice';
+  return {
+    title: `${clientName} ${invoice.invoiceNumber}`,
+  };
+}
+
 const INVOICE_STYLES = `
   .page-container { padding-bottom: 60px; max-width: 1200px; margin: 0 auto; }
   .fade-in { animation: fadeIn 0.4s ease-in-out; }
