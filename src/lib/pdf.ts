@@ -154,10 +154,10 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
 
   const ROW_H    = 22;
   const HEADER_Y = height - 255;
-  const blueHdr  = rgb(0.85, 0.92, 0.98);
-  const blueDark = rgb(0.1, 0.25, 0.55);
-  const blueBdr  = rgb(0.67, 0.80, 0.93);
-  const blueRow  = rgb(0.93, 0.97, 1.0);
+  const blueHdr  = rgb(0.88, 0.92, 0.96);
+  const blueDark = rgb(0.05, 0.1, 0.2);
+  const blueBdr  = rgb(0.2, 0.25, 0.35);
+  const blueRow  = rgb(0.97, 0.98, 1.0);
 
   // Header background
   page.drawRectangle({ x: TL, y: HEADER_Y - ROW_H, width: TW, height: ROW_H, color: blueHdr });
@@ -238,14 +238,14 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   const TABLE_H      = TABLE_TOP - TABLE_BOTTOM;
 
   // Border and lines
-  drawBorderedRect(page, TL, TABLE_BOTTOM, TW, TABLE_H, [0.67, 0.80, 0.93], 1.2);
-  page.drawLine({ start: { x: TL, y: TABLE_TOP - ROW_H }, end: { x: TR, y: TABLE_TOP - ROW_H }, thickness: 1.2, color: blueBdr });
+  drawBorderedRect(page, TL, TABLE_BOTTOM, TW, TABLE_H, [0.2, 0.25, 0.35], 1.5);
+  page.drawLine({ start: { x: TL, y: TABLE_TOP - ROW_H }, end: { x: TR, y: TABLE_TOP - ROW_H }, thickness: 1.5, color: blueBdr });
 
   // Row dividers
   let divY = TABLE_TOP - ROW_H;
   invoice.items.forEach(() => {
     divY -= ROW_H;
-    page.drawLine({ start: { x: TL, y: divY }, end: { x: TR, y: divY }, thickness: 0.5, color: blueBdr });
+    page.drawLine({ start: { x: TL, y: divY }, end: { x: TR, y: divY }, thickness: 0.8, color: blueBdr });
   });
 
   // Vertical dividers
@@ -280,7 +280,8 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
     drawTotalRow(taxLabel, formatAmount(invoice.taxAmount), rowCursorY);
   }
   rowCursorY -= 22;
-  page.drawRectangle({ x: totalsX - 5, y: rowCursorY - 4, width: 185, height: 22, color: rgb(0.85, 0.92, 0.98) });
+  page.drawRectangle({ x: totalsX - 5, y: rowCursorY - 4, width: 185, height: 22, color: rgb(0.88, 0.92, 0.96) });
+  drawBorderedRect(page, totalsX - 5, rowCursorY - 4, 185, 22, [0.2, 0.25, 0.35], 1.2);
   drawTotalRow('Total Due:', formatAmount(invoice.totalAmount), rowCursorY, true);
 
   // ── In Words ──────────────────────────────────────────────────────────────
