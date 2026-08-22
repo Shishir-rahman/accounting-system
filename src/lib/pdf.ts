@@ -18,6 +18,12 @@ function numberToWords(num: number): string {
   return convert(Math.floor(num)) + ' Taka Only.';
 }
 
+function formatAmount(num: number | string | null | undefined): string {
+  if (num === null || num === undefined || isNaN(Number(num))) return '0.00';
+  const val = Number(num);
+  return val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 // Helper: draw a simple bordered rectangle (no transparency needed)
 function drawBorderedRect(page: any, x: number, y: number, w: number, h: number, borderColor: [number,number,number], borderWidth = 1) {
   const [r, g, b] = borderColor;
@@ -219,9 +225,9 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
       } else if (col.id === 'qty') {
         page.drawText(item.quantity.toString(), { x: col.x + 5, y: rowY + 7, size: 8, font });
       } else if (col.id === 'price') {
-        page.drawText(item.unitPrice.toFixed(2), { x: col.x + 5, y: rowY + 7, size: 8, font });
+        page.drawText(formatAmount(item.unitPrice), { x: col.x + 5, y: rowY + 7, size: 8, font });
       } else if (col.id === 'total') {
-        page.drawText(item.total.toFixed(2), { x: col.x + 5, y: rowY + 7, size: 8, font });
+        page.drawText(formatAmount(item.total), { x: col.x + 5, y: rowY + 7, size: 8, font });
       }
     }
     rowCursorY = rowY;
@@ -255,27 +261,27 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
     page.drawText(label, { x: totalsX, y, size: 9, font: bold ? boldFont : font });
     page.drawText(value, { x: totalsValX - font.widthOfTextAtSize(value, 9), y, size: 9, font: bold ? boldFont : font });
   };
-  drawTotalRow('Subtotal:', invoice.subtotal.toFixed(2), rowCursorY);
+  drawTotalRow('Subtotal:', formatAmount(invoice.subtotal), rowCursorY);
   if (invoice.discountAmount > 0) { 
     rowCursorY -= 16; 
     const discLabel = invoice.discountNote ? `Discount (${invoice.discountNote}):` : 'Discount:';
-    drawTotalRow(discLabel, `-${invoice.discountAmount.toFixed(2)}`, rowCursorY); 
+    drawTotalRow(discLabel, `-${formatAmount(invoice.discountAmount)}`, rowCursorY); 
   }
   const hasExcludeVat = invoice.items.some((i: any) => i.vatType === 'EXCLUDE' && i.vatRate > 0) || 
                         (invoice.vatRate > 0 && !invoice.items.some((i: any) => i.vatType === 'INCLUDE'));
   if (hasExcludeVat && invoice.vatAmount > 0) {
     rowCursorY -= 16;
     const vatLabel = invoice.vatRate > 0 ? `VAT (${invoice.vatRate}%):` : 'VAT:';
-    drawTotalRow(vatLabel, invoice.vatAmount.toFixed(2), rowCursorY);
+    drawTotalRow(vatLabel, formatAmount(invoice.vatAmount), rowCursorY);
   }
   if (invoice.taxAmount > 0) {
     rowCursorY -= 16;
     const taxLabel = invoice.taxRate > 0 ? `TAX / AIT (${invoice.taxRate}%):` : 'TAX / AIT:';
-    drawTotalRow(taxLabel, invoice.taxAmount.toFixed(2), rowCursorY);
+    drawTotalRow(taxLabel, formatAmount(invoice.taxAmount), rowCursorY);
   }
   rowCursorY -= 22;
   page.drawRectangle({ x: totalsX - 5, y: rowCursorY - 4, width: 185, height: 22, color: rgb(0.85, 0.92, 0.98) });
-  drawTotalRow('Total Due:', invoice.totalAmount.toFixed(2), rowCursorY, true);
+  drawTotalRow('Total Due:', formatAmount(invoice.totalAmount), rowCursorY, true);
 
   // ── In Words ──────────────────────────────────────────────────────────────
   rowCursorY -= 40;

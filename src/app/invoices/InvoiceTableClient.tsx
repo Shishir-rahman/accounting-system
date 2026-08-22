@@ -50,7 +50,7 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
     setLoadingId(null);
   };
 
-  const formatCurrency = (amount: number) => '৳ ' + amount.toLocaleString(undefined, { minimumFractionDigits: 2 });
+  const formatCurrency = (amount: number) => '৳ ' + (amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div>

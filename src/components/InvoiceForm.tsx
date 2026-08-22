@@ -507,7 +507,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
                       />
                     </td>
                     <td className="text-right font-medium" style={{ paddingRight: '16px' }}>
-                      {(item.quantity * item.unitPrice).toFixed(2)}
+                      {(item.quantity * item.unitPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="text-center">
                       <button type="button" onClick={() => removeItem(item.id)} className="btn-icon text-danger" disabled={items.length <= 1}>✖</button>
@@ -537,7 +537,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
           <div className="totals-box" style={{ width: '100%', maxWidth: '380px', marginLeft: 'auto' }}>
             <div className="totals-row flex justify-between mb-2">
               <span className="text-secondary font-semibold">Subtotal</span>
-              <span className="font-semibold">{subtotal.toFixed(2)}</span>
+              <span className="font-semibold">{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             
             <div className="totals-row flex justify-between mb-2 items-center">
@@ -585,7 +585,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
             {vatAmount > 0 && (
               <div className="totals-row flex justify-between mb-2">
                 <span className="text-secondary font-semibold">VAT Amount</span>
-                <span className="font-semibold">{vatAmount.toFixed(2)}</span>
+                <span className="font-semibold">{vatAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             )}
 
@@ -606,7 +606,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
             {taxAmount > 0 && (
               <div className="totals-row flex justify-between mb-2">
                 <span className="text-secondary font-semibold">TAX Amount</span>
-                <span className="font-semibold">{taxAmount.toFixed(2)}</span>
+                <span className="font-semibold">{taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             )}
 
@@ -614,7 +614,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
             
             <div className="totals-row flex justify-between">
               <span className="text-lg font-bold">Total (৳)</span>
-              <span className="text-lg font-bold text-brand">{total.toFixed(2)}</span>
+              <span className="text-lg font-bold text-brand">{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>

@@ -103,7 +103,7 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
 
   const formatCurrency = (amount: number) => 
     (settings.currency === 'BDT' ? '৳ ' : `${settings.currency} `) + 
-    amount.toFixed(2);
+    (amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div className="page-container fade-in">

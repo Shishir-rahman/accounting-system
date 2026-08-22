@@ -15,3 +15,9 @@ export function numberToWords(num: number): string {
 
   return convert(Math.floor(num)) + ' Taka Only.';
 }
+
+export function formatAmount(num: number | string | null | undefined): string {
+  if (num === null || num === undefined || isNaN(Number(num))) return '0.00';
+  const val = Number(num);
+  return val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
