@@ -26,12 +26,26 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
   const [contactId, setContactId] = useState(initialData?.contactId || contacts[0]?.id || '');
   const [category, setCategory] = useState(initialData?.category || 'MONTHLY_BILLING');
   
+  const get7WorkingDaysAhead = (startDateStr: string) => {
+    let count = 0;
+    const current = new Date(startDateStr);
+    while (count < 7) {
+      current.setDate(current.getDate() + 1);
+      const day = current.getDay();
+      // Skip Friday (5) and Saturday (6)
+      if (day !== 5 && day !== 6) {
+        count++;
+      }
+    }
+    return current.toISOString().split('T')[0];
+  };
+
   const initDate = initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
   const [date, setDate] = useState(initDate);
   
-  const defaultDueDate = new Date();
-  defaultDueDate.setDate(defaultDueDate.getDate() + 14);
-  const initDueDate = initialData?.dueDate ? new Date(initialData.dueDate).toISOString().split('T')[0] : defaultDueDate.toISOString().split('T')[0];
+  const initDueDate = initialData?.dueDate 
+    ? new Date(initialData.dueDate).toISOString().split('T')[0] 
+    : get7WorkingDaysAhead(initDate);
   const [dueDate, setDueDate] = useState(initDueDate);
   
   const [notes, setNotes] = useState(initialData?.notes || settings?.defaultNotes || 'Thank you for your business!');
@@ -365,7 +379,19 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
           </div>
           <div className="form-group">
             <label>Invoice Date</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="form-control" />
+            <input 
+              type="date" 
+              value={date} 
+              onChange={e => {
+                const newDate = e.target.value;
+                setDate(newDate);
+                if (!initialData && newDate) {
+                  setDueDate(get7WorkingDaysAhead(newDate));
+                }
+              }} 
+              required 
+              className="form-control" 
+            />
           </div>
           <div className="form-group">
             <label>Due Date</label>
