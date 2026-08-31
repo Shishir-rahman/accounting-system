@@ -102,7 +102,17 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   // ── Bill To + Invoice Meta ────────────────────────────────────────────────
   page.drawText('BILL TO:', { x: 50, y: height - 160, size: 10, font: boldFont });
   page.drawText(invoice.contact.name, { x: 50, y: height - 175, size: 11, font: boldFont });
-  page.drawText(invoice.contact.address || '', { x: 50, y: height - 190, size: 9, font, maxWidth: 200 });
+  
+  const binVal = invoice.customerBin || invoice.contact?.binNumber;
+  let billToY = height - 190;
+  if (binVal) {
+    page.drawText(`BIN: ${binVal}`, { x: 50, y: billToY, size: 9, font: boldFont, color: rgb(0.3, 0.3, 0.3) });
+    billToY -= 14;
+  }
+
+  if (invoice.contact.address) {
+    page.drawText(invoice.contact.address, { x: 50, y: billToY, size: 9, font, maxWidth: 200 });
+  }
 
   function formatDate(d: any): string {
     if (!d) return '';

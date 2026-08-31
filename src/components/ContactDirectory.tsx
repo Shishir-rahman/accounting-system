@@ -13,6 +13,7 @@ export default function ContactDirectory({ type, title }: { type: string, title:
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [binNumber, setBinNumber] = useState('');
   const [defaultProductId, setDefaultProductId] = useState('');
   const [customPrice, setCustomPrice] = useState('');
   const [vatType, setVatType] = useState('EXCLUDE');
@@ -54,12 +55,12 @@ export default function ContactDirectory({ type, title }: { type: string, title:
     }] : [];
 
     const res = await createContact({
-      name, type, email, phone, address, defaultProductId,
+      name, type, email, phone, address, binNumber, defaultProductId,
       customRates
     });
 
     if (res.success) {
-      setName(''); setEmail(''); setPhone(''); setAddress(''); setDefaultProductId('');
+      setName(''); setEmail(''); setPhone(''); setAddress(''); setBinNumber(''); setDefaultProductId('');
       setCustomPrice(''); setVatType('EXCLUDE'); setVatRate('5');
       setShowForm(false);
       fetchContacts();
@@ -106,6 +107,10 @@ export default function ContactDirectory({ type, title }: { type: string, title:
             <div className="form-group">
               <label>Billing Address</label>
               <input type="text" value={address} onChange={e => setAddress(e.target.value)} className="form-control" />
+            </div>
+            <div className="form-group">
+              <label>BIN Number / VAT Reg No (Optional)</label>
+              <input type="text" value={binNumber} onChange={e => setBinNumber(e.target.value)} placeholder="e.g. 001234567-0101" className="form-control" />
             </div>
             {type === 'CUSTOMER' && (
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>

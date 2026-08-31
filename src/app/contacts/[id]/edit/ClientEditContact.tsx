@@ -13,6 +13,7 @@ export default function ClientEditContact({ contact }: { contact: any }) {
   const [email, setEmail] = useState(contact.email || '');
   const [phone, setPhone] = useState(contact.phone || '');
   const [address, setAddress] = useState(contact.address || '');
+  const [binNumber, setBinNumber] = useState(contact.binNumber || '');
   const [defaultProductId, setDefaultProductId] = useState(contact.defaultProductId || '');
   const [customRates, setCustomRates] = useState<any[]>(contact.customRates || []);
   const [products, setProducts] = useState<any[]>([]);
@@ -53,6 +54,7 @@ export default function ClientEditContact({ contact }: { contact: any }) {
       email, 
       phone, 
       address, 
+      binNumber,
       defaultProductId,
       customRates: validCustomRates.map(r => ({ 
         productId: r.productId, 
@@ -105,6 +107,17 @@ export default function ClientEditContact({ contact }: { contact: any }) {
               <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className="form-control" />
             </div>
             <div className="form-group">
+              <label>BIN Number / VAT Reg No (Optional)</label>
+              <input type="text" value={binNumber} onChange={e => setBinNumber(e.target.value)} placeholder="e.g. 001234567-0101" className="form-control" />
+            </div>
+          </div>
+
+          <div className="grid-2-col">
+            <div className="form-group">
+              <label>Billing Address</label>
+              <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} className="form-control" />
+            </div>
+            <div className="form-group">
               <label>Default Product / Service</label>
               <select value={defaultProductId} onChange={e => setDefaultProductId(e.target.value)} className="form-control">
                 <option value="">None (Select Manually)</option>
@@ -113,11 +126,6 @@ export default function ClientEditContact({ contact }: { contact: any }) {
                 ))}
               </select>
             </div>
-          </div>
-
-          <div className="form-group">
-            <label>Billing Address</label>
-            <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} className="form-control" />
           </div>
 
           {contact.type === 'CUSTOMER' && (

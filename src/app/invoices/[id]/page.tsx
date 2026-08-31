@@ -153,6 +153,11 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
             <div className="bill-to-standard">
               <h3 className="section-label">BILL TO:</h3>
               <h2 className="customer-name">{invoice.contact.name}</h2>
+              {!!(invoice.customerBin || invoice.contact?.binNumber) && (
+                <p className="text-sm font-bold text-secondary" style={{ marginTop: '2px', marginBottom: '4px' }}>
+                  BIN: {invoice.customerBin || invoice.contact?.binNumber}
+                </p>
+              )}
               <p className="text-secondary text-sm whitespace-pre-line">
                 {invoice.contact.address || 'Address not provided'}
               </p>

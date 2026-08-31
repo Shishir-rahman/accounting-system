@@ -82,6 +82,7 @@ export async function getInvoiceById(id: string) {
 
 export async function createInvoice(data: {
   contactId: string;
+  customerBin?: string;
   date: string;
   dueDate: string;
   billingPeriodStart?: string;
@@ -147,6 +148,7 @@ export async function createInvoice(data: {
         billingPeriodStart: data.billingPeriodStart ? new Date(data.billingPeriodStart) : null,
         billingPeriodEnd: data.billingPeriodEnd ? new Date(data.billingPeriodEnd) : null,
         contactId: data.contactId,
+        customerBin: data.customerBin || null,
         category: data.category || null,
         subtotal,
         discountAmount,
@@ -210,6 +212,7 @@ export async function createInvoice(data: {
 
 export async function updateInvoice(id: string, data: {
   contactId: string;
+  customerBin?: string;
   date: string;
   dueDate: string;
   billingPeriodStart?: string;
@@ -277,6 +280,7 @@ export async function updateInvoice(id: string, data: {
         billingPeriodStart: data.billingPeriodStart ? new Date(data.billingPeriodStart) : null,
         billingPeriodEnd: data.billingPeriodEnd ? new Date(data.billingPeriodEnd) : null,
         contactId: data.contactId,
+        customerBin: data.customerBin || null,
         category: data.category || null,
         subtotal,
         discountAmount,

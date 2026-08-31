@@ -27,6 +27,7 @@ export async function createContact(data: {
   email?: string; 
   phone?: string; 
   address?: string; 
+  binNumber?: string;
   defaultProductId?: string;
   customRates?: { productId: string; rate: number; vatType?: string; vatRate?: number }[]
 }) {
@@ -39,6 +40,7 @@ export async function createContact(data: {
           email: data.email,
           phone: data.phone,
           address: data.address,
+          binNumber: data.binNumber || null,
           defaultProductId: data.defaultProductId || null
         }
       });
@@ -77,6 +79,7 @@ export async function updateContact(id: string, data: {
   email?: string; 
   phone?: string; 
   address?: string; 
+  binNumber?: string;
   defaultProductId?: string;
   customRates?: { productId: string; rate: number; vatType?: string; vatRate?: number }[]
 }) {
@@ -90,6 +93,7 @@ export async function updateContact(id: string, data: {
           email: data.email,
           phone: data.phone,
           address: data.address,
+          binNumber: data.binNumber || null,
           defaultProductId: data.defaultProductId || null
         }
       });

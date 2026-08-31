@@ -24,8 +24,21 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
 
   const [contactId, setContactId] = useState(initialData?.contactId || contacts[0]?.id || '');
+  const [customerBin, setCustomerBin] = useState(
+    initialData?.customerBin !== undefined && initialData?.customerBin !== null
+      ? initialData.customerBin
+      : (contacts.find(c => c.id === (initialData?.contactId || contacts[0]?.id))?.binNumber || '')
+  );
   const [category, setCategory] = useState(initialData?.category || 'MONTHLY_BILLING');
-  
+
+  const handleContactChange = (newContactId: string) => {
+    setContactId(newContactId);
+    const selectedContact = contacts.find(c => c.id === newContactId);
+    if (selectedContact) {
+      setCustomerBin(selectedContact.binNumber || '');
+    }
+  };
+
   const get7WorkingDaysAhead = (startDateStr: string) => {
     let count = 0;
     const current = new Date(startDateStr);
@@ -310,6 +323,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
 
     const payload = {
       contactId,
+      customerBin: customerBin.trim() !== '' ? customerBin : undefined,
       category,
       date,
       dueDate,
@@ -357,15 +371,25 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
       {error && <div className="alert alert-danger">{error}</div>}
 
       <form onSubmit={handleSubmit}>
-        <div className="grid-4-col mb-6">
+        <div className="grid-5-col mb-6">
           <div className="form-group">
             <label>Customer</label>
-            <select value={contactId} onChange={e => setContactId(e.target.value)} required className="form-control">
+            <select value={contactId} onChange={e => handleContactChange(e.target.value)} required className="form-control">
               <option value="">Select Customer</option>
               {contacts.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+          </div>
+          <div className="form-group">
+            <label>BIN / VAT Reg No</label>
+            <input 
+              type="text" 
+              value={customerBin} 
+              onChange={e => setCustomerBin(e.target.value)} 
+              placeholder="Optional BIN" 
+              className="form-control" 
+            />
           </div>
           <div className="form-group">
             <label>Billing Category</label>
