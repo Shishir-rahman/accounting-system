@@ -85,13 +85,15 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string, setting
 
   // ── Company info (right-aligned) ──────────────────────────────────────────
   const companyName = settings?.companyName || 'Sokrio Technologies Ltd.';
-  const address1 = settings?.address || 'House 11 (4th floor), Road 21, Sector 4, Uttara, Dhaka - 1230';
+  const address1 = settings?.address || '';
   const phoneText = settings?.phone ? `Phone: ${settings.phone}` : '';
   const websiteText = 'Website: www.sokrio.com';
   const contactInfo = phoneText ? `${phoneText} | ${websiteText}` : websiteText;
   page.drawText(companyName, { x: width - boldFont.widthOfTextAtSize(companyName, 16) - 50, y: height - 50, size: 16, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
-  page.drawText(address1, { x: width - font.widthOfTextAtSize(address1, 9) - 50, y: height - 70, size: 9, font });
-  page.drawText(contactInfo, { x: width - font.widthOfTextAtSize(contactInfo, 9) - 50, y: height - 82, size: 9, font });
+  if (address1) {
+    page.drawText(address1, { x: width - font.widthOfTextAtSize(address1, 9) - 50, y: height - 70, size: 9, font });
+  }
+  page.drawText(contactInfo, { x: width - font.widthOfTextAtSize(contactInfo, 9) - 50, y: height - (address1 ? 82 : 70), size: 9, font });
 
   // ── INVOICE title (centered, small, light blue) ───────────────────────────
   const invoiceTitle = 'INVOICE';

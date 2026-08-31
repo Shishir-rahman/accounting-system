@@ -137,7 +137,7 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
             <div className="company-info-right">
               <h1 className="company-name-standard">{settings?.companyName || 'Sokrio Technologies Ltd.'}</h1>
               <p className="text-secondary text-sm">
-                {settings?.address || 'House 11 (4th floor), Road 21, Sector 4, Uttara, Dhaka - 1230'}<br/>
+                {settings?.address && <>{settings.address}<br/></>}
                 {settings?.phone ? `Phone: ${settings.phone} | ` : ''}Website: www.sokrio.com
               </p>
             </div>
