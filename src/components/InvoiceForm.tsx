@@ -189,7 +189,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
                 getContactRates(contactId).then(rates => {
                   const customData = rates.find((r: any) => r.productId === defaultProdId);
                   const priceToUse = customData ? customData.rate : product.price;
-                  const descriptionToUse = customData?.lastDescription || product.name;
+                  const descriptionToUse = customData?.lastDescription || '';
                   const vType = customData?.vatType || 'EXCLUDE';
                   const cVat = customData?.vatRate ?? null;
                   const vRate = cVat !== null && cVat > 0 ? cVat : (vType === 'EXCLUDE' ? 5 : 0);
@@ -244,7 +244,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
           if (product) {
             const customData = selectedContactRates.find((r: any) => r.productId === value);
             const priceToUse = customData ? customData.rate : product.price;
-            const descriptionToUse = customData?.lastDescription || product.name;
+            const descriptionToUse = customData?.lastDescription || '';
             const vType = customData?.vatType || 'EXCLUDE';
             const cVat = customData?.vatRate ?? null;
             const vRate = cVat !== null && cVat > 0 ? cVat : (vType === 'EXCLUDE' ? 5 : 0);
@@ -529,7 +529,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
                     <td>
                       <input 
                         type="text" 
-                        placeholder="Item description" 
+                        placeholder="Description (Optional)" 
                         value={item.description} 
                         onChange={e => updateItem(item.id, 'description', e.target.value)}
                         className="table-input"

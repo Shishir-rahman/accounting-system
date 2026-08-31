@@ -136,7 +136,7 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   // ── Items Table with dynamic columns ─────────────────────────────────────
   const isNoPeriodCategory = invoice.category === 'IMPLEMENTATION' || invoice.category === 'PROJECT';
   const hasPeriod = !isNoPeriodCategory && !!invoice.billingPeriodStart && !!invoice.billingPeriodEnd;
-  const hasDesc   = invoice.items.some((i: any) => i.description);
+  const hasDesc   = invoice.items.some((i: any) => i.description && i.description.trim() !== '' && i.description.trim() !== i.product?.name?.trim());
 
   const TL = 50;
   const TR = width - 50;
