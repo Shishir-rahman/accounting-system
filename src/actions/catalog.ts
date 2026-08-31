@@ -4,9 +4,14 @@ import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
 export async function getProducts() {
-  return await prisma.product.findMany({
-    orderBy: { name: 'asc' }
-  });
+  try {
+    return await prisma.product.findMany({
+      orderBy: { name: 'asc' }
+    });
+  } catch (error) {
+    console.error('Failed to fetch products:', error);
+    return [];
+  }
 }
 
 export async function createProduct(data: { name: string; type: string; price: number; description?: string; category?: string }) {

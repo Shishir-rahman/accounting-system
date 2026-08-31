@@ -4,16 +4,21 @@ import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
 export async function getContactsByType(type: string) {
-  return await prisma.contact.findMany({
-    where: { type },
-    include: {
-      invoices: true,
-      lines: true,
-      defaultProduct: true,
-      customRates: true
-    },
-    orderBy: { name: 'asc' }
-  });
+  try {
+    return await prisma.contact.findMany({
+      where: { type },
+      include: {
+        invoices: true,
+        lines: true,
+        defaultProduct: true,
+        customRates: true
+      },
+      orderBy: { name: 'asc' }
+    });
+  } catch (error) {
+    console.error('Failed to fetch contacts by type:', error);
+    return [];
+  }
 }
 
 export async function createContact(data: { 
@@ -123,22 +128,32 @@ export async function updateContact(id: string, data: {
 }
 
 export async function getContactProfile(id: string) {
-  return await prisma.contact.findUnique({
-    where: { id },
-    include: {
-      customRates: true,
-      invoices: {
-        orderBy: { date: 'desc' }
-      },
-      lines: {
-        include: { journalEntry: true, account: true },
-        orderBy: { journalEntry: { date: 'desc' } }
+  try {
+    return await prisma.contact.findUnique({
+      where: { id },
+      include: {
+        customRates: true,
+        invoices: {
+          orderBy: { date: 'desc' }
+        },
+        lines: {
+          include: { journalEntry: true, account: true },
+          orderBy: { journalEntry: { date: 'desc' } }
+        }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Failed to fetch contact profile:', error);
+    return null;
+  }
 }
 export async function getContactRates(contactId: string) {
-  return await prisma.contactProductRate.findMany({
-    where: { contactId }
-  });
+  try {
+    return await prisma.contactProductRate.findMany({
+      where: { contactId }
+    });
+  } catch (error) {
+    console.error('Failed to fetch contact rates:', error);
+    return [];
+  }
 }

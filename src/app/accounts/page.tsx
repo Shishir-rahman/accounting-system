@@ -24,9 +24,15 @@ export default function ChartOfAccountsPage() {
 
   const fetchAccounts = async () => {
     setLoading(true);
-    const data = await getAccounts();
-    setAccounts(data);
-    setLoading(false);
+    try {
+      const data = await getAccounts();
+      setAccounts(data || []);
+    } catch (err: any) {
+      console.error('Failed to load accounts:', err);
+      setError('Failed to load accounts. Please check database connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

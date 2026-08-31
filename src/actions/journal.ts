@@ -39,9 +39,14 @@ export async function setupChartOfAccounts() {
 }
 
 export async function getAccounts() {
-  return await prisma.account.findMany({
-    orderBy: { code: 'asc' }
-  });
+  try {
+    return await prisma.account.findMany({
+      orderBy: { code: 'asc' }
+    });
+  } catch (error) {
+    console.error('Failed to fetch accounts:', error);
+    return [];
+  }
 }
 
 export async function createAccount(data: { code: string; name: string; type: string; description?: string }) {
@@ -66,9 +71,14 @@ export async function createAccount(data: { code: string; name: string; type: st
 }
 
 export async function getContacts() {
-  return await prisma.contact.findMany({
-    orderBy: { name: 'asc' }
-  });
+  try {
+    return await prisma.contact.findMany({
+      orderBy: { name: 'asc' }
+    });
+  } catch (error) {
+    console.error('Failed to fetch contacts:', error);
+    return [];
+  }
 }
 
 export async function createJournalEntry(data: {
@@ -125,71 +135,93 @@ export async function createJournalEntry(data: {
 }
 
 export async function getJournalEntries() {
-  return await prisma.journalEntry.findMany({
-    include: {
-      lines: {
-        include: { account: true, contact: true }
-      }
-    },
-    orderBy: { date: 'desc' }
-  });
+  try {
+    return await prisma.journalEntry.findMany({
+      include: {
+        lines: {
+          include: { account: true, contact: true }
+        }
+      },
+      orderBy: { date: 'desc' }
+    });
+  } catch (error) {
+    console.error('Failed to fetch journal entries:', error);
+    return [];
+  }
 }
 
 export async function getSummaryData() {
-  // Aggregate data from Journal lines for Dashboard
-  const accounts = await prisma.account.findMany();
-  const lines = await prisma.journalEntryLine.findMany({
-    include: { account: true }
-  });
+  try {
+    // Aggregate data from Journal lines for Dashboard
+    const accounts = await prisma.account.findMany();
+    const lines = await prisma.journalEntryLine.findMany({
+      include: { account: true }
+    });
 
-  let totalBank = 0;
-  let totalCash = 0;
-  let totalIncome = 0;
-  let totalExpense = 0;
+    let totalBank = 0;
+    let totalCash = 0;
+    let totalIncome = 0;
+    let totalExpense = 0;
 
-  lines.forEach(line => {
-    const accType = line.account.type;
-    const accName = line.account.name;
+    lines.forEach(line => {
+      const accType = line.account.type;
+      const accName = line.account.name;
 
-    // Assets increase with Debit, decrease with Credit
-    if (accType === 'ASSET') {
-      const net = line.debit - line.credit;
-      if (accName === 'Bank') totalBank += net;
-      if (accName === 'Cash') totalCash += net;
-    }
-    
-    // Revenue increases with Credit, decreases with Debit
-    if (accType === 'REVENUE') {
-      totalIncome += (line.credit - line.debit);
-    }
+      // Assets increase with Debit, decrease with Credit
+      if (accType === 'ASSET') {
+        const net = line.debit - line.credit;
+        if (accName === 'Bank') totalBank += net;
+        if (accName === 'Cash') totalCash += net;
+      }
+      
+      // Revenue increases with Credit, decreases with Debit
+      if (accType === 'REVENUE') {
+        totalIncome += (line.credit - line.debit);
+      }
 
-    // Expense increases with Debit, decreases with Credit
-    if (accType === 'EXPENSE') {
-      totalExpense += (line.debit - line.credit);
-    }
-  });
+      // Expense increases with Debit, decreases with Credit
+      if (accType === 'EXPENSE') {
+        totalExpense += (line.debit - line.credit);
+      }
+    });
 
-  return {
-    totalBank,
-    totalCash,
-    totalBalance: totalBank + totalCash,
-    totalIncome,
-    totalExpense,
-    netIncome: totalIncome - totalExpense
-  };
+    return {
+      totalBank,
+      totalCash,
+      totalBalance: totalBank + totalCash,
+      totalIncome,
+      totalExpense,
+      netIncome: totalIncome - totalExpense
+    };
+  } catch (error) {
+    console.error('Failed to fetch summary data:', error);
+    return {
+      totalBank: 0,
+      totalCash: 0,
+      totalBalance: 0,
+      totalIncome: 0,
+      totalExpense: 0,
+      netIncome: 0
+    };
+  }
 }
 
 export async function getLedgerLines(accountId: string) {
   if (!accountId) return [];
   
-  return await prisma.journalEntryLine.findMany({
-    where: { accountId },
-    include: {
-      journalEntry: true,
-      contact: true
-    },
-    orderBy: {
-      journalEntry: { date: 'asc' }
-    }
-  });
+  try {
+    return await prisma.journalEntryLine.findMany({
+      where: { accountId },
+      include: {
+        journalEntry: true,
+        contact: true
+      },
+      orderBy: {
+        journalEntry: { date: 'asc' }
+      }
+    });
+  } catch (error) {
+    console.error('Failed to fetch ledger lines:', error);
+    return [];
+  }
 }

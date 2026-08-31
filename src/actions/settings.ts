@@ -4,26 +4,46 @@ import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
 export async function getCompanySettings() {
-  let settings = await prisma.companySettings.findUnique({
-    where: { id: 'default' }
-  });
-
-  if (!settings) {
-    settings = await prisma.companySettings.create({
-      data: {
-        id: 'default',
-        companyName: 'My Company',
-        email: 'accounts@sokrio.com',
-        currency: 'BDT'
-      }
+  try {
+    let settings = await prisma.companySettings.findUnique({
+      where: { id: 'default' }
     });
-  }
 
-  if (!settings.email) {
-    settings.email = 'accounts@sokrio.com';
-  }
+    if (!settings) {
+      settings = await prisma.companySettings.create({
+        data: {
+          id: 'default',
+          companyName: 'My Company',
+          email: 'accounts@sokrio.com',
+          currency: 'BDT'
+        }
+      });
+    }
 
-  return settings;
+    if (!settings.email) {
+      settings.email = 'accounts@sokrio.com';
+    }
+
+    return settings;
+  } catch (error) {
+    console.error('Failed to fetch company settings:', error);
+    return {
+      id: 'default',
+      companyName: 'My Company',
+      email: 'accounts@sokrio.com',
+      phone: null,
+      address: null,
+      taxId: null,
+      currency: 'BDT',
+      invoicePrefix: 'INV-',
+      defaultNotes: null,
+      enableCcEmail: true,
+      defaultCcEmail: 'sahiuddin@sokrio.com',
+      defaultAttachments: null,
+      logoUrl: null,
+      updatedAt: new Date()
+    };
+  }
 }
 
 export async function updateCompanySettings(data: {

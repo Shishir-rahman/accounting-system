@@ -37,26 +37,27 @@ export default function DashboardCards({ data }: { data: any }) {
       <style>{`
         .dashboard-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 24px;
-          margin-bottom: 30px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 20px;
+          margin-bottom: 24px;
         }
 
         .stat-card {
           display: flex;
           align-items: center;
-          gap: 20px;
-          padding: 24px;
+          gap: 16px;
+          padding: 20px;
         }
 
         .stat-icon {
-          width: 60px;
-          height: 60px;
+          width: 52px;
+          height: 52px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.8rem;
+          font-size: 1.5rem;
+          flex-shrink: 0;
         }
 
         .bank-icon {
@@ -75,22 +76,36 @@ export default function DashboardCards({ data }: { data: any }) {
         }
 
         .stat-title {
-          font-size: 0.875rem;
+          font-size: 0.85rem;
           color: var(--text-secondary);
           font-weight: 600;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
 
         .stat-value {
-          font-size: 1.75rem;
+          font-size: 1.5rem;
           font-weight: 700;
           color: var(--text-primary);
-          margin-bottom: 4px;
+          margin-bottom: 2px;
+          word-break: break-word;
         }
 
         .stat-change {
           font-size: 0.75rem;
           font-weight: 500;
+        }
+
+        @media (max-width: 640px) {
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          .stat-card {
+            padding: 16px;
+          }
+          .stat-value {
+            font-size: 1.3rem;
+          }
         }
       `}</style>
     </>

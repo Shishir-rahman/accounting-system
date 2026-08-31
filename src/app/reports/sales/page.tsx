@@ -44,17 +44,22 @@ export default function SalesReportPage() {
 
   const fetchReport = async (start: string, end: string, customer: string, product: string) => {
     setLoading(true);
-    const res = await getSalesReport({
-      startDate: start || undefined,
-      endDate: end || undefined,
-      contactId: customer || undefined,
-      productId: product || undefined
-    });
+    try {
+      const res = await getSalesReport({
+        startDate: start || undefined,
+        endDate: end || undefined,
+        contactId: customer || undefined,
+        productId: product || undefined
+      });
 
-    if (res.success) {
-      setReportData(res.data);
+      if (res.success) {
+        setReportData(res.data);
+      }
+    } catch (err: any) {
+      console.error('Failed to load sales report:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleGenerate = (e: React.FormEvent) => {

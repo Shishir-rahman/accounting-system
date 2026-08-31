@@ -28,13 +28,18 @@ export default function ContactDirectory({ type, title }: { type: string, title:
 
   const fetchContacts = async () => {
     setLoading(true);
-    const [data, prodData] = await Promise.all([
-      getContactsByType(type),
-      getProducts()
-    ]);
-    setContacts(data);
-    setProducts(prodData);
-    setLoading(false);
+    try {
+      const [data, prodData] = await Promise.all([
+        getContactsByType(type),
+        getProducts()
+      ]);
+      setContacts(data || []);
+      setProducts(prodData || []);
+    } catch (err: any) {
+      console.error('Failed to load contacts:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -49,25 +49,35 @@ function getSystemDefaultAttachments(defaultAttachmentsJson?: string | null): { 
 }
 
 export async function getInvoices() {
-  return await prisma.invoice.findMany({
-    include: {
-      contact: true,
-      items: true
-    },
-    orderBy: { createdAt: 'desc' }
-  });
+  try {
+    return await prisma.invoice.findMany({
+      include: {
+        contact: true,
+        items: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  } catch (error) {
+    console.error('Failed to fetch invoices:', error);
+    return [];
+  }
 }
 
 export async function getInvoiceById(id: string) {
-  return await prisma.invoice.findUnique({
-    where: { id },
-    include: {
-      contact: true,
-      items: {
-        include: { product: true }
+  try {
+    return await prisma.invoice.findUnique({
+      where: { id },
+      include: {
+        contact: true,
+        items: {
+          include: { product: true }
+        }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.error('Failed to fetch invoice by id:', error);
+    return null;
+  }
 }
 
 export async function createInvoice(data: {

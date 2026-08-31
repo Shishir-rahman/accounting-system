@@ -758,8 +758,14 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
         .quick-modal-card { width: 100%; max-width: 500px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
 
         @media (max-width: 1024px) {
-          .grid-3-col, .grid-4-col, .grid-5-col { grid-template-columns: 1fr; }
+          .grid-3-col, .grid-4-col, .grid-5-col { grid-template-columns: repeat(2, 1fr); }
           .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+          .totals-box { max-width: 100% !important; margin-left: 0 !important; }
+        }
+
+        @media (max-width: 768px) {
+          .grid-2-col, .grid-3-col, .grid-4-col, .grid-5-col { grid-template-columns: 1fr; }
+          .quick-modal-card { width: 92%; margin: 16px; padding: 16px; }
         }
       `}</style>
     </div>

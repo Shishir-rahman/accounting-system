@@ -265,6 +265,13 @@ export default function JournalForm({ accounts, contacts }: { accounts: any[], c
         .ml-2 { margin-left: 8px; }
         .mt-4 { margin-top: 16px; }
         .mt-6 { margin-top: 24px; }
+
+        @media (max-width: 768px) {
+          .header-fields { grid-template-columns: 1fr; }
+          .header-fields .form-group { grid-column: span 1 !important; }
+          .form-actions { flex-direction: column; gap: 12px; }
+          .form-actions .btn { width: 100%; }
+        }
       `}</style>
     </div>
   );

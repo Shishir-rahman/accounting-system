@@ -19,15 +19,24 @@ export default function ProductsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchProducts();
   }, []);
 
   const fetchProducts = async () => {
     setLoading(true);
-    const data = await getProducts();
-    setProducts(data);
-    setLoading(false);
+    setFetchError(null);
+    try {
+      const data = await getProducts();
+      setProducts(data || []);
+    } catch (err: any) {
+      console.error('Failed to load products:', err);
+      setFetchError('Failed to load catalog. Please check database connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (product: any) => {
@@ -90,6 +99,12 @@ export default function ProductsPage() {
           </button>
         </div>
       </header>
+
+      {fetchError && (
+        <div style={{ padding: '16px', backgroundColor: 'rgba(238, 93, 80, 0.1)', color: '#ee5d50', borderRadius: '8px', border: '1px solid rgba(238, 93, 80, 0.3)', marginBottom: '24px' }}>
+          ⚠️ {fetchError}
+        </div>
+      )}
 
       {showForm && (
         <div className="card mb-8">

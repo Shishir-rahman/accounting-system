@@ -106,6 +106,7 @@ input:focus, select:focus, textarea:focus {
   flex: 1;
   margin-left: var(--sidebar-width);
   padding: 30px;
+  min-width: 0; /* Prevents flex children from overflowing parent */
   transition: all 0.3s ease;
 }
 
@@ -121,7 +122,14 @@ input:focus, select:focus, textarea:focus {
 
 .card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+}
+
+/* Responsive Table Wrapper */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-sm);
 }
 
 /* Typography Utilities */
@@ -139,19 +147,62 @@ input:focus, select:focus, textarea:focus {
 .text-success { color: var(--success); }
 .text-danger { color: var(--danger); }
 
-/* Flexbox Utilities */
+/* Flexbox & Grid Utilities */
 .flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
+.justify-end { justify-content: flex-end; }
 .gap-2 { gap: 8px; }
 .gap-4 { gap: 16px; }
 .gap-6 { gap: 24px; }
 .grid { display: grid; }
 
+/* Responsive Media Queries */
 @media (max-width: 1024px) {
   .main-content {
     margin-left: 0;
-    padding: 20px;
+    padding: 16px;
+    margin-top: 64px; /* Space for mobile top nav bar */
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .text-3xl {
+    font-size: 1.5rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
   }
 }
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 12px;
+  }
+
+  /* Form & Grid Stacking */
+  .grid-2-col, .grid-3-col, .filter-grid, .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Buttons & Inputs Touch Targets */
+  .btn, input, select, textarea, .form-control {
+    min-height: 44px;
+    font-size: 0.95rem;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
