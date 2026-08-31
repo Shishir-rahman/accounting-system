@@ -37,7 +37,7 @@ function drawBorderedRect(page: any, x: number, y: number, w: number, h: number,
   page.drawLine({ start: { x: x + w, y }, end: { x: x + w, y: y + h }, thickness: borderWidth, color: rgb(r, g, b) });
 }
 
-export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promise<Buffer> {
+export async function generateInvoicePDF(invoice: any, logoUrl?: string, settings?: any): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]);
   const { width, height } = page.getSize();
@@ -84,9 +84,11 @@ export async function generateInvoicePDF(invoice: any, logoUrl?: string): Promis
   }
 
   // ── Company info (right-aligned) ──────────────────────────────────────────
-  const companyName = 'Sokrio Technologies Ltd.';
-  const address1 = 'House 11 (4th floor), Road 21, Sector 4, Uttara, Dhaka - 1230';
-  const contactInfo = 'Phone: 01711505322 | Website: www.sokrio.com';
+  const companyName = settings?.companyName || 'Sokrio Technologies Ltd.';
+  const address1 = settings?.address || 'House 11 (4th floor), Road 21, Sector 4, Uttara, Dhaka - 1230';
+  const phoneText = settings?.phone ? `Phone: ${settings.phone}` : '';
+  const websiteText = 'Website: www.sokrio.com';
+  const contactInfo = phoneText ? `${phoneText} | ${websiteText}` : websiteText;
   page.drawText(companyName, { x: width - boldFont.widthOfTextAtSize(companyName, 16) - 50, y: height - 50, size: 16, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
   page.drawText(address1, { x: width - font.widthOfTextAtSize(address1, 9) - 50, y: height - 70, size: 9, font });
   page.drawText(contactInfo, { x: width - font.widthOfTextAtSize(contactInfo, 9) - 50, y: height - 82, size: 9, font });

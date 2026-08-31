@@ -363,7 +363,7 @@ We are working regularly to upgrade our system for your efficiency, which is our
 From now on, Sokrio is offering your payment (Optional) through bKash ( 01798013530 ) to reduce your valuable time. Please mention your invoice number as a reference for the payment.`;
 
       const settings = await getCompanySettings();
-      const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined);
+      const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined, settings);
       const custName = invoice.contact?.name ? invoice.contact.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Customer';
       const extraAttachments = getSystemDefaultAttachments(settings.defaultAttachments);
 
@@ -556,7 +556,7 @@ If this amount has already been paid, please disregard this notice and we apolog
 From now on, Sokrio is offering your payment (Optional) through bKash to this number 01798013530 to reduce your valuable time. Please mention your invoice number as a reference for the payment.`;
 
     const settings = await getCompanySettings();
-    const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined);
+    const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined, settings);
     const custName = invoice.contact?.name ? invoice.contact.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Customer';
     const extraAttachments = getSystemDefaultAttachments(settings.defaultAttachments);
 
@@ -619,7 +619,7 @@ If this amount has already been paid, please disregard this notice and we apolog
 Thank you for your immediate attention.`;
 
     const settings = await getCompanySettings();
-    const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined);
+    const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined, settings);
     const custName = invoice.contact?.name ? invoice.contact.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Customer';
     const extraAttachments = getSystemDefaultAttachments(settings.defaultAttachments);
 
@@ -657,7 +657,7 @@ export async function getInvoicePdfBase64(id: string) {
     if (!invoice) return { success: false, error: 'Invoice not found' };
 
     const settings = await getCompanySettings();
-    const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined);
+    const pdfBuffer = await generateInvoicePDF(invoice, settings.logoUrl || undefined, settings);
     const base64 = pdfBuffer.toString('base64');
     const custName = invoice.contact?.name ? invoice.contact.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Customer';
     return {
