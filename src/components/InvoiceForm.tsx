@@ -226,8 +226,18 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
     }
   }, [contactId, category, products, contacts, initialData]);
 
+  const handleGlobalVatRateChange = (newRate: number) => {
+    setVatRate(newRate);
+    setItems((prevItems: any[]) => prevItems.map((item: any) => {
+      if (item.vatType === 'EXCLUDE') {
+        return { ...item, vatRate: newRate };
+      }
+      return item;
+    }));
+  };
+
   const addItem = () => {
-    setItems([...items, { id: Date.now(), productId: '', description: '', quantity: 1, unitPrice: 0, vatType: 'EXCLUDE', vatRate: 5 }]);
+    setItems([...items, { id: Date.now(), productId: '', description: '', quantity: 1, unitPrice: 0, vatType: 'EXCLUDE', vatRate: vatRate }]);
   };
 
   const removeItem = (id: number) => {
@@ -247,7 +257,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
             const descriptionToUse = customData?.lastDescription || '';
             const vType = customData?.vatType || 'EXCLUDE';
             const cVat = customData?.vatRate ?? null;
-            const vRate = cVat !== null && cVat > 0 ? cVat : (vType === 'EXCLUDE' ? 5 : 0);
+            const vRate = cVat !== null ? cVat : (vType === 'EXCLUDE' ? vatRate : 0);
             return { 
               ...item, 
               productId: value as string, 
@@ -260,7 +270,7 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
           return { ...item, productId: value as string };
         }
         if (field === 'vatType') {
-          const newVatRate = value === 'EXCLUDE' ? (item.vatRate || 5) : item.vatRate;
+          const newVatRate = value === 'EXCLUDE' ? (item.vatRate ?? vatRate) : item.vatRate;
           return { ...item, vatType: value, vatRate: newVatRate };
         }
         if (field === 'vatRate') {
@@ -617,26 +627,25 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
             )}
 
             {items.some((i: any) => i.vatType === 'EXCLUDE') && (
-              <div className="totals-row flex justify-between mb-2 items-center">
-                <span className="text-secondary font-semibold">VAT (%)</span>
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="100"
-                  step="0.01"
-                  value={vatRate} 
-                  onChange={e => setVatRate(parseFloat(e.target.value) || 0)}
-                  className="form-control text-right"
-                  style={{ width: '110px', padding: '4px 8px' }}
-                />
-              </div>
-            )}
-
-            {vatAmount > 0 && (
-              <div className="totals-row flex justify-between mb-2">
-                <span className="text-secondary font-semibold">VAT Amount</span>
-                <span className="font-semibold">{vatAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
+              <>
+                <div className="totals-row flex justify-between mb-2 items-center">
+                  <span className="text-secondary font-semibold">VAT (%)</span>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="100"
+                    step="0.01"
+                    value={vatRate} 
+                    onChange={e => handleGlobalVatRateChange(parseFloat(e.target.value) || 0)}
+                    className="form-control text-right"
+                    style={{ width: '110px', padding: '4px 8px' }}
+                  />
+                </div>
+                <div className="totals-row flex justify-between mb-2">
+                  <span className="text-secondary font-semibold">VAT Amount</span>
+                  <span className="font-semibold">{vatAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </>
             )}
 
             <div className="totals-row flex justify-between mb-2 items-center">
