@@ -13,8 +13,8 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  // Security / Accounting rule: only DRAFT invoices can be edited
-  if (invoice.status !== 'DRAFT') {
+  // Security / Accounting rule: only unsent & unpaid invoices can be edited
+  if (invoice.status === 'SENT' || invoice.status === 'PAID') {
     redirect(`/invoices/${invoice.id}`);
   }
 

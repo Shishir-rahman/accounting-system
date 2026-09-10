@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { sendInvoice, getInvoicePdfBase64 } from '@/actions/invoice';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function InvoiceActions({ invoiceId, status }: { invoiceId: string, status: string }) {
   const router = useRouter();
@@ -93,9 +94,15 @@ export default function InvoiceActions({ invoiceId, status }: { invoiceId: strin
             </button>
           )}
         </div>
+
+        {status !== 'SENT' && status !== 'PAID' && (
+          <Link href={`/invoices/${invoiceId}/edit`} className="btn btn-secondary w-full" style={{ justifyContent: 'center', textDecoration: 'none' }}>
+            ✏️ Edit Invoice
+          </Link>
+        )}
       </div>
 
-      {status === 'DRAFT' && (
+      {status !== 'SENT' && status !== 'PAID' && (
         <p className="help-text mt-2 text-center text-secondary text-sm">
           Sending this invoice will finalize it and automatically post it to the General Journal.
         </p>

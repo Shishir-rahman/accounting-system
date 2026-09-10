@@ -138,7 +138,16 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
                     </td>
                     <td className="text-right">
                       <div className="flex justify-end gap-2 items-center">
-                        {!isPaid && (
+                        {invoice.status !== 'SENT' && invoice.status !== 'PAID' && (
+                          <Link 
+                            href={`/invoices/${invoice.id}/edit`} 
+                            className="btn-action btn-edit"
+                            title="Edit Invoice"
+                          >
+                            ✏️ Edit
+                          </Link>
+                        )}
+                        {!isPaid && invoice.status === 'SENT' && (
                           <>
                             <button 
                               type="button" 
@@ -209,6 +218,8 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
 
         .btn-action { padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: all 0.2s; }
         .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-edit { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+        .btn-edit:hover { background-color: #e2e8f0; }
         .btn-reminder { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
         .btn-reminder:hover:not(:disabled) { background-color: #bae6fd; }
         .btn-warning { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }

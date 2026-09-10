@@ -309,14 +309,6 @@ export default async function InvoiceViewPage({ params }: { params: Promise<{ id
             <hr className="divider" />
             
             <InvoiceActions invoiceId={invoice.id} status={invoice.status} />
-
-            {invoice.status === 'DRAFT' && (
-              <div className="mt-4 text-center">
-                <Link href={`/invoices/${invoice.id}/edit`} className="btn btn-secondary w-full" style={{ display: 'block' }}>
-                  ✏️ Edit Invoice
-                </Link>
-              </div>
-            )}
           </div>
         </div>
       </div>

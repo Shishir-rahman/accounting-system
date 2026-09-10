@@ -159,7 +159,7 @@ export async function createInvoice(data: {
         taxAmount,
         totalAmount,
         notes: data.notes,
-        status: 'DUE',
+        status: 'DRAFT',
         items: {
           create: items.map(item => ({
             productId: item.productId,
@@ -230,7 +230,9 @@ export async function updateInvoice(id: string, data: {
   try {
     const existing = await prisma.invoice.findUnique({ where: { id } });
     if (!existing) return { success: false, error: 'Invoice not found' };
-    if (existing.status !== 'DRAFT') return { success: false, error: 'Only DRAFT invoices can be edited' };
+    if (existing.status === 'SENT' || existing.status === 'PAID') {
+      return { success: false, error: 'Invoices that have already been sent or paid cannot be edited' };
+    }
 
     // Calculate totals
     const items = data.items.map(item => ({
