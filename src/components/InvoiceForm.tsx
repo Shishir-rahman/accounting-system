@@ -274,7 +274,9 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
           return { ...item, vatType: value, vatRate: newVatRate };
         }
         if (field === 'vatRate') {
-          return { ...item, vatRate: Number(value) || 0 };
+          const newRate = Number(value) || 0;
+          setVatRate(newRate);
+          return { ...item, vatRate: newRate };
         }
         return { ...item, [field]: value };
       }
@@ -285,10 +287,11 @@ export default function InvoiceForm({ contacts, settings, initialData }: { conta
   const subtotal = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);
   const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
   
-  // Calculate VAT per item (INCLUDE extracts portion, EXCLUDE adds on top)
+  // Calculate VAT per item (INCLUDE extracts portion, EXCLUDE adds on top using effective VAT rate)
   const excludeVatSum = items.reduce((sum: number, item: any) => {
-    if (item.vatType === 'EXCLUDE' && item.vatRate > 0) {
-      return sum + (item.quantity * item.unitPrice * (item.vatRate / 100));
+    if (item.vatType === 'EXCLUDE') {
+      const effectiveRate = item.vatRate !== undefined ? item.vatRate : vatRate;
+      return sum + (item.quantity * item.unitPrice * (effectiveRate / 100));
     }
     return sum;
   }, 0);

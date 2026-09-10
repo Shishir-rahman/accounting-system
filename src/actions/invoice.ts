@@ -113,8 +113,10 @@ export async function createInvoice(data: {
     const discountAmount = data.discountAmount || 0;
     const discountNote = data.discountNote || null;
 
+    const vatRate = data.vatRate !== undefined ? data.vatRate : 0;
+
     const excludeVatSum = items.reduce((sum, item) => {
-      const rate = item.vatRate || 0;
+      const rate = item.vatType === 'EXCLUDE' ? (item.vatRate !== undefined ? item.vatRate : vatRate) : 0;
       if (item.vatType === 'EXCLUDE' && rate > 0) {
         return sum + (item.quantity * item.unitPrice * (rate / 100));
       }
@@ -132,7 +134,6 @@ export async function createInvoice(data: {
 
     const individualVat = excludeVatSum + includeVatSum;
     const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
-    const vatRate = data.vatRate || 0;
     const vatAmount = data.vatAmount !== undefined ? data.vatAmount : (individualVat > 0 ? individualVat : (totalAfterDiscount * (vatRate / 100)));
     const taxRate = data.taxRate || 0;
     const taxAmount = data.taxAmount !== undefined ? data.taxAmount : (totalAfterDiscount * (taxRate / 100));
@@ -244,8 +245,10 @@ export async function updateInvoice(id: string, data: {
     const discountAmount = data.discountAmount || 0;
     const discountNote = data.discountNote || null;
 
+    const vatRate = data.vatRate !== undefined ? data.vatRate : 0;
+
     const excludeVatSum = items.reduce((sum, item) => {
-      const rate = item.vatRate || 0;
+      const rate = item.vatType === 'EXCLUDE' ? (item.vatRate !== undefined ? item.vatRate : vatRate) : 0;
       if (item.vatType === 'EXCLUDE' && rate > 0) {
         return sum + (item.quantity * item.unitPrice * (rate / 100));
       }
@@ -263,7 +266,6 @@ export async function updateInvoice(id: string, data: {
 
     const individualVat = excludeVatSum + includeVatSum;
     const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
-    const vatRate = data.vatRate || 0;
     const vatAmount = data.vatAmount !== undefined ? data.vatAmount : (individualVat > 0 ? individualVat : (totalAfterDiscount * (vatRate / 100)));
     const taxRate = data.taxRate || 0;
     const taxAmount = data.taxAmount !== undefined ? data.taxAmount : (totalAfterDiscount * (taxRate / 100));
