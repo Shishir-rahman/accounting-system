@@ -9,6 +9,12 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+  // Filter states
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -52,6 +58,72 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
 
   const formatCurrency = (amount: number) => '৳ ' + (amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // Extract unique customers
+  const uniqueCustomers = Array.from(
+    new Map(
+      invoices
+        .filter((inv: any) => inv.contact)
+        .map((inv: any) => [inv.contactId || inv.contact?.id, inv.contact?.name])
+    ).entries()
+  ).map(([id, name]) => ({ id, name }));
+
+  // Extract unique months
+  const uniqueMonthsMap = new Map<string, string>();
+  invoices.forEach((inv: any) => {
+    const dateObj = inv.billingPeriodStart ? new Date(inv.billingPeriodStart) : new Date(inv.date);
+    if (!isNaN(dateObj.getTime())) {
+      const key = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+      const label = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      uniqueMonthsMap.set(key, label);
+    }
+  });
+  const uniqueMonths = Array.from(uniqueMonthsMap.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([key, label]) => ({ key, label }));
+
+  // Filter invoices
+  const filteredInvoices = invoices.filter((inv: any) => {
+    // Customer filter
+    if (selectedCustomer && inv.contactId !== selectedCustomer && inv.contact?.id !== selectedCustomer) {
+      return false;
+    }
+
+    // Month filter
+    if (selectedMonth) {
+      const dateObj = inv.billingPeriodStart ? new Date(inv.billingPeriodStart) : new Date(inv.date);
+      if (!isNaN(dateObj.getTime())) {
+        const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+        if (monthKey !== selectedMonth) {
+          return false;
+        }
+      }
+    }
+
+    // Status filter
+    if (selectedStatus) {
+      if (selectedStatus === 'DRAFT' && inv.status !== 'DRAFT') return false;
+      if (selectedStatus === 'SENT' && inv.status !== 'SENT') return false;
+      if (selectedStatus === 'PAID' && inv.status !== 'PAID') return false;
+      if (selectedStatus === 'DUE' && (inv.status === 'PAID' || inv.status === 'DRAFT')) return false;
+    }
+
+    // Search query filter
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
+      const invNum = (inv.invoiceNumber || '').toLowerCase();
+      const custName = (inv.contact?.name || '').toLowerCase();
+      const desc = (inv.items || []).map((i: any) => i.description || i.product?.name).join(' ').toLowerCase();
+      if (!invNum.includes(q) && !custName.includes(q) && !desc.includes(q)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const filteredTotalAmount = filteredInvoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0);
+  const isFiltered = Boolean(selectedCustomer || selectedMonth || selectedStatus || searchQuery);
+
   return (
     <div>
       {toast && (
@@ -59,6 +131,89 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
           {toast.message}
         </div>
       )}
+
+      {/* Filter Controls Bar */}
+      <div className="filter-bar mb-6 p-4 rounded-md border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex flex-wrap gap-3 items-center" style={{ flex: '1 1 300px' }}>
+            {/* Search Input */}
+            <div style={{ flex: '1 1 180px', minWidth: '160px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Search invoice #, customer..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="filter-input"
+              />
+            </div>
+
+            {/* Customer Filter */}
+            <div style={{ flex: '1 1 180px', minWidth: '160px' }}>
+              <select
+                value={selectedCustomer}
+                onChange={e => setSelectedCustomer(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">👤 All Customers ({uniqueCustomers.length})</option>
+                {uniqueCustomers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Billing Month Filter */}
+            <div style={{ flex: '1 1 170px', minWidth: '150px' }}>
+              <select
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">📅 All Months ({uniqueMonths.length})</option>
+                {uniqueMonths.map(m => (
+                  <option key={m.key} value={m.key}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div style={{ flex: '1 1 140px', minWidth: '130px' }}>
+              <select
+                value={selectedStatus}
+                onChange={e => setSelectedStatus(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">🏷️ All Statuses</option>
+                <option value="DRAFT">DRAFT</option>
+                <option value="SENT">SENT</option>
+                <option value="DUE">DUE / UNPAID</option>
+                <option value="PAID">PAID</option>
+              </select>
+            </div>
+
+            {/* Reset Button */}
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCustomer('');
+                  setSelectedMonth('');
+                  setSelectedStatus('');
+                  setSearchQuery('');
+                }}
+                className="btn-action btn-edit"
+                style={{ padding: '6px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+              >
+                🔄 Reset
+              </button>
+            )}
+          </div>
+
+          {/* Summary Badge */}
+          <div className="text-xs font-semibold text-secondary" style={{ backgroundColor: 'white', padding: '6px 14px', borderRadius: '20px', border: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>
+            Count: <span style={{ color: 'var(--brand-primary)', fontWeight: 700 }}>{filteredInvoices.length}</span> | Total: <span style={{ color: '#059669', fontWeight: 700 }}>{formatCurrency(filteredTotalAmount)}</span>
+          </div>
+        </div>
+      </div>
 
       <div className="table-responsive">
         <table className="data-table">
@@ -76,14 +231,33 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
             </tr>
           </thead>
           <tbody>
-            {invoices.length === 0 ? (
+            {filteredInvoices.length === 0 ? (
               <tr>
                 <td colSpan={9} className="text-center py-8 text-secondary">
-                  No invoices found. Create one to get started.
+                  {isFiltered ? (
+                    <div>
+                      <p className="mb-2 font-medium">No invoices match your selected filters.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCustomer('');
+                          setSelectedMonth('');
+                          setSelectedStatus('');
+                          setSearchQuery('');
+                        }}
+                        className="btn-action btn-edit"
+                        style={{ padding: '6px 16px', marginTop: '4px' }}
+                      >
+                        Reset Filters
+                      </button>
+                    </div>
+                  ) : (
+                    'No invoices found. Create one to get started.'
+                  )}
                 </td>
               </tr>
             ) : (
-              invoices.map(invoice => {
+              filteredInvoices.map(invoice => {
                 // Format Billing Month
                 let billingMonthStr = '-';
                 if (invoice.billingPeriodStart) {
@@ -187,10 +361,15 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
 
       <style>{`
         .mb-4 { margin-bottom: 16px; }
+        .mb-6 { margin-bottom: 24px; }
         .py-8 { padding-top: 32px; padding-bottom: 32px; }
         .flex { display: flex; }
+        .flex-wrap { flex-wrap: wrap; }
         .justify-end { justify-content: flex-end; }
+        .justify-between { justify-content: space-between; }
         .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .gap-4 { gap: 16px; }
         .items-center { align-items: center; }
         .text-right { text-align: right !important; }
         .text-center { text-align: center !important; }
@@ -198,6 +377,9 @@ export default function InvoiceTableClient({ initialInvoices }: { initialInvoice
         .toast-alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 500; }
         .alert-success { background-color: var(--success-bg); color: var(--success); border: 1px solid rgba(5, 205, 153, 0.3); }
         .alert-error { background-color: var(--danger-bg); color: var(--danger); border: 1px solid rgba(238, 93, 80, 0.3); }
+
+        .filter-input, .filter-select { width: 100%; padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border-color); background-color: white; font-size: 0.85rem; outline: none; transition: border-color 0.2s; color: var(--text-primary); }
+        .filter-input:focus, .filter-select:focus { border-color: var(--brand-primary); }
 
         .table-responsive { overflow-x: auto; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
